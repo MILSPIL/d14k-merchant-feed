@@ -1,0 +1,25 @@
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Composer
+vendor/
+
+# WordPress
+*.log
+wp-config.php
+wp-content/advanced-cache.php
+xmlrpc.php
+debug.log
+
+# Editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

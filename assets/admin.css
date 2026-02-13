@@ -1,0 +1,16 @@
+.d14k-wrap .d14k-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+.d14k-wrap .d14k-card h2 {
+    margin-top: 0;
+}
+.d14k-error {
+    color: #dc3232;
+}
+.d14k-next-run {
+    margin-left: 15px;
+    color: #666;
+}

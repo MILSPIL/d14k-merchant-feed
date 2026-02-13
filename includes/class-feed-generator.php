@@ -187,10 +187,10 @@ class D14K_Feed_Generator
         $regular_price = $variation->get_regular_price();
         $sale_price = $variation->get_sale_price();
 
-        // Force UAH currency for UA/RU feeds if available
-        if (in_array($lang, array('uk', 'ru'))) {
-            $target_currency = 'UAH';
-            if ($target_currency !== $currency && has_filter('wcml_raw_price_amount')) {
+        // Multi-currency support (Requires WCML)
+        if (has_filter('wcml_price_currency') && has_filter('wcml_raw_price_amount')) {
+            $target_currency = apply_filters('wcml_price_currency', $currency);
+            if ($target_currency !== $currency) {
                 $regular_price = apply_filters('wcml_raw_price_amount', $regular_price, $target_currency);
                 if ($sale_price) {
                     $sale_price = apply_filters('wcml_raw_price_amount', $sale_price, $target_currency);

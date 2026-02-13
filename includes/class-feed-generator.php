@@ -73,7 +73,7 @@ class D14K_Feed_Generator
     private function build_xml($lang)
     {
         $settings = get_option('d14k_feed_settings', array());
-        $brand = isset($settings['brand']) ? $settings['brand'] : 'Diamonds 14K';
+        $brand = isset($settings['brand']) ? $settings['brand'] : get_bloginfo('name');
         $country = isset($settings['country_of_origin']) ? $settings['country_of_origin'] : 'UA';
         $site_url = $this->wpml->get_home_url($lang);
         $site_name = get_bloginfo('name');
@@ -320,7 +320,7 @@ class D14K_Feed_Generator
                 }
             }
         }
-        return isset($settings['default_google_category']) ? $settings['default_google_category'] : 'Apparel & Accessories > Jewelry';
+        return isset($settings['default_google_category']) ? $settings['default_google_category'] : '';
     }
 
     public function get_feed_path($lang)

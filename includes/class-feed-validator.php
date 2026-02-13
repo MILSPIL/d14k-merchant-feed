@@ -149,7 +149,7 @@ class D14K_Feed_Validator
                             $gallery_ids,
                             $original_id,
                             $lang,
-                            isset($settings['brand']) ? $settings['brand'] : 'Diamonds 14K',
+                            isset($settings['brand']) ? $settings['brand'] : get_bloginfo('name'),
                             isset($settings['country_of_origin']) ? $settings['country_of_origin'] : 'UA',
                             $settings
                         );
@@ -198,7 +198,7 @@ class D14K_Feed_Validator
                                 $gallery_ids,
                                 $original_parent_id,
                                 $lang,
-                                isset($settings['brand']) ? $settings['brand'] : 'Diamonds 14K',
+                                isset($settings['brand']) ? $settings['brand'] : get_bloginfo('name'),
                                 isset($settings['country_of_origin']) ? $settings['country_of_origin'] : 'UA',
                                 $settings
                             );

@@ -162,7 +162,7 @@ class D14K_Admin_Settings {
                         </tr>
                         <tr>
                             <th>Бренд</th>
-                            <td><input type="text" name="brand" value="<?php echo esc_attr( isset( $settings['brand'] ) ? $settings['brand'] : 'Diamonds 14K' ); ?>" class="regular-text"></td>
+                            <td><input type="text" name="brand" value="<?php echo esc_attr( isset( $settings['brand'] ) ? $settings['brand'] : '' ); ?>" class="regular-text" placeholder="Назва вашого бренду"></td>
                         </tr>
                         <tr>
                             <th>Країна походження<br><small>(Country of Origin)</small></th>
@@ -192,7 +192,7 @@ class D14K_Admin_Settings {
                         </tr>
                         <tr>
                             <th>Google Product Category<br><small>(за замовчуванням)</small></th>
-                            <td><input type="text" name="default_google_category" value="<?php echo esc_attr( isset( $settings['default_google_category'] ) ? $settings['default_google_category'] : 'Apparel & Accessories > Jewelry' ); ?>" class="large-text"></td>
+                            <td><input type="text" name="default_google_category" value="<?php echo esc_attr( isset( $settings['default_google_category'] ) ? $settings['default_google_category'] : '' ); ?>" class="large-text" placeholder="Apparel &amp; Accessories &gt; Jewelry"></td>
                         </tr>
                     </table>
                 </div>
@@ -261,7 +261,7 @@ class D14K_Admin_Settings {
         $settings = array(
             'enabled'                 => ! empty( $_POST['enabled'] ),
             'cron_interval'           => sanitize_text_field( isset( $_POST['cron_interval'] ) ? $_POST['cron_interval'] : 'd14k_every_6_hours' ),
-            'brand'                   => sanitize_text_field( isset( $_POST['brand'] ) ? $_POST['brand'] : 'Diamonds 14K' ),
+            'brand'                   => sanitize_text_field( isset( $_POST['brand'] ) ? $_POST['brand'] : '' ),
             'country_of_origin'       => sanitize_text_field( isset( $_POST['country_of_origin'] ) ? $_POST['country_of_origin'] : 'UA' ),
             'default_google_category' => sanitize_text_field( isset( $_POST['default_google_category'] ) ? $_POST['default_google_category'] : '' ),
             'category_map'            => array_map( 'sanitize_text_field', isset( $_POST['category_map'] ) ? $_POST['category_map'] : array() ),
@@ -423,9 +423,9 @@ class D14K_Admin_Settings {
         return array(
             'enabled'                 => true,
             'cron_interval'           => 'd14k_every_6_hours',
-            'brand'                   => 'Diamonds 14K',
+            'brand'                   => '',
             'country_of_origin'       => 'UA',
-            'default_google_category' => 'Apparel & Accessories > Jewelry',
+            'default_google_category' => '',
             'category_map'            => array(),
         );
     }

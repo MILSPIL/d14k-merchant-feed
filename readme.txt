@@ -18,7 +18,8 @@ GMC Feed for WooCommerce is a lightweight and powerful plugin designed to genera
 
 **Key Features:**
 *   **WooCommerce Support:** Works seamlessly with Simple and Variable products.
-*   **WPML Compatibility:** Automatically generates separate feeds for each language (UK, EN, RU, etc.) with correct currency conversion (requires WCML).
+*   **True Multi-Currency (WCML):** Automatically selects the correct currency for each language as configured in WPML/WooCommerce (e.g., USD for EN, UAH for UK), ensuring accurate pricing in feeds.
+*   **WPML Compatibility:** Automatically generates separate feeds for each language.
 *   **Google Merchant Center Compliant:** Includes all essential tags (`g:id`, `g:title`, `g:price`, `g:availability`, `g:gtin`, `g:mpn`, `g:brand`, `g:google_product_category`, `g:item_group_id`).
 *   **Automatic Updates:** Set cron schedules to update your feed every 3, 6, 12 hours, daily, weekly, or monthly.
 *   **Built-in Validator:** Includes a "Test Validation" tool to check your products against GMC requirements before submission.
@@ -27,11 +28,12 @@ GMC Feed for WooCommerce is a lightweight and powerful plugin designed to genera
 
 **Українська**
 
-D14K Merchant Feed — це легкий та потужний плагін для генерації XML-фідів товарів для Google Merchant Center. Він створений для простоти та продуктивності, гарантуючи правильне відображення ваших товарів у Google Shopping.
+*   **GMC Feed for WooCommerce** — це легкий та потужний плагін для генерації XML-фідів товарів для Google Merchant Center. Він створений для простоти та продуктивності, гарантуючи правильне відображення ваших товарів у Google Shopping.
 
 **Основні можливості:**
 *   **Підтримка WooCommerce:** Працює як з простими (Simple), так і з варіативними (Variable) товарами.
-*   **Сумісність з WPML:** Автоматично генерує окремі фіди для кожної мови (UK, EN, RU тощо) з правильною конвертацією валют (потрібен WCML).
+*   **Справжня мультивалютність (WCML):** Автоматично обирає вірну валюту для кожної мови відповідно до налаштувань WPML/WooCommerce (наприклад, USD для EN, UAH для UK).
+*   **Сумісність з WPML:** Автоматично генерує окремі фіди для кожної мови.
 *   **Відповідність Google Merchant Center:** Включає всі необхідні теги (`g:id`, `g:title`, `g:price`, `g:availability`, `g:gtin`, `g:mpn`, `g:brand`, `g:google_product_category`, `g:item_group_id`).
 *   **Автоматичне оновлення:** Налаштуйте розклад оновлення фіду: кожні 3, 6, 12 годин, щодня, щотижня або щомісяця.
 *   **Вбудований валідатор:** Функція "Тестова перевірка" дозволяє перевірити товари на відповідність вимогам GMC перед відправкою.
@@ -65,6 +67,14 @@ Yes, version 1.0.16 added full support for simple products.
 3. **Validation Tool:** Check your products for missing fields.
 
 == Changelog ==
+
+= 1.0.19 =
+*   Improved multi-currency support: now strictly respects the currency assigned to each language via WCML settings.
+*   Removed all specific default values (brand, categories) for a generic community release.
+*   Renamed plugin to "GMC Feed for WooCommerce".
+
+= 1.0.18 =
+*   Internal code refactoring and cleanup.
 
 = 1.0.17 =
 *   Added domain restriction for .ru zone.

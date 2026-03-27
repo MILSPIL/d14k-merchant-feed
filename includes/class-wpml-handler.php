@@ -20,6 +20,18 @@ class D14K_WPML_Handler
         return $languages ? array_keys($languages) : array('uk');
     }
 
+    /**
+     * Get the default (primary) language code.
+     * @return string e.g. 'ru', 'uk'
+     */
+    public function get_default_language()
+    {
+        if (!$this->is_active()) {
+            return substr(get_locale(), 0, 2);
+        }
+        return apply_filters('wpml_default_language', null);
+    }
+
     public function switch_language($lang_code)
     {
         if ($this->is_active()) {

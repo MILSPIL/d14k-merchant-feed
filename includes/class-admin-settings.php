@@ -239,7 +239,7 @@ class D14K_Admin_Settings
                         <?php endif; ?>
                     </form>
 
-                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top: 10px; display: flex; align-items: center; gap: 12px;">
+                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top: 10px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
                         <?php wp_nonce_field('d14k_test_validation'); ?>
                         <input type="hidden" name="action" value="d14k_test_validation">
                         <button type="submit" class="button">🔍 Тестова перевірка (10 товарів)</button>

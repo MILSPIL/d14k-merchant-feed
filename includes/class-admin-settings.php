@@ -239,12 +239,11 @@ class D14K_Admin_Settings
                         <?php endif; ?>
                     </form>
 
-                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top: 10px;">
+                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top: 10px; display: flex; align-items: center; gap: 12px;">
                         <?php wp_nonce_field('d14k_test_validation'); ?>
                         <input type="hidden" name="action" value="d14k_test_validation">
                         <button type="submit" class="button">🔍 Тестова перевірка (10 товарів)</button>
-                        <p class="description">Перевірте фід на наявність всіх обов'язкових полів перед відправкою до Google
-                            Merchant Center</p>
+                        <span class="description" style="margin: 0;">Перевірте фід на наявність всіх обов'язкових полів перед відправкою до Google Merchant Center</span>
                     </form>
 
                     <!-- Disclaimer Box was here, moved out -->

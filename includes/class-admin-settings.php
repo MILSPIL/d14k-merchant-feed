@@ -246,6 +246,26 @@ class D14K_Admin_Settings
                         <p class="description">Перевірте фід на наявність всіх обов'язкових полів перед відправкою до Google
                             Merchant Center</p>
                     </form>
+
+                    <!-- Disclaimer Box -->
+                    <div class="d14k-disclaimer-box">
+                        <div class="d14k-disclaimer-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                        <div class="d14k-disclaimer-content">
+                            <h4>Відмова від відповідальності</h4>
+                            <p>Автор не несе відповідальності за втрати, збитки чи інші наслідки використання плагіна. Ви використовуєте його на власний ризик. <strong>Рекомендується робити резервні копії!</strong></p>
+                            <h4>Корисні посилання</h4>
+                            <ul>
+                                <li><a href="https://github.com/MILSPIL/d14k-merchant-feed" target="_blank" rel="noopener noreferrer">Сторінка плагіна на GitHub</a> — опис, поширені запитання та оновлення.</li>
+                                <li><a href="https://wordpress.org/plugins/wpvivid-backuprestore/" target="_blank" rel="noopener noreferrer">WPvivid Backup & Migration</a> — рекомендований плагін для створення резервних копій сайтів.</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div><!-- /.d14k-tab-content[feeds] -->
 

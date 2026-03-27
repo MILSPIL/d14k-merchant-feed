@@ -61,9 +61,9 @@ class D14K_YML_Generator
             wp_mkdir_p($this->feed_dir);
         }
 
-        // Use the default language (usually RU) for base product data
-        $default_lang = $this->wpml->get_default_language();
-        $this->wpml->switch_language($default_lang);
+        // Marketplace feeds use RU as base language (YML standard),
+        // with UA translations embedded as name_ua / description_ua.
+        $this->wpml->switch_language('ru');
 
         try {
             $xml = $this->build_yml($channel);

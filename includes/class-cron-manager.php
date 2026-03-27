@@ -87,9 +87,6 @@ class D14K_Cron_Manager
     public function get_interval_options()
     {
         return array(
-            'd14k_every_3_hours' => 'Кожні 3 години',
-            'd14k_every_6_hours' => 'Кожні 6 годин',
-            'd14k_every_12_hours' => 'Кожні 12 годин',
             'daily' => 'Раз на добу',
             'd14k_weekly' => 'Раз на тиждень',
             'd14k_monthly' => 'Раз на місяць',

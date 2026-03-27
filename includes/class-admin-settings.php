@@ -1533,7 +1533,7 @@ class D14K_Admin_Settings
     {
         return array(
             'enabled' => true,
-            'cron_interval' => 'd14k_every_6_hours',
+            'cron_interval' => 'daily',
             'brand_mode' => 'custom',
             'brand' => '',
             'brand_attribute' => '',

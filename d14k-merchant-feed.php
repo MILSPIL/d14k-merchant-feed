@@ -20,18 +20,6 @@ define('D14K_FEED_PATH', plugin_dir_path(__FILE__));
 define('D14K_FEED_URL', plugin_dir_url(__FILE__));
 
 add_filter('cron_schedules', function ($schedules) {
-    $schedules['d14k_every_3_hours'] = array(
-        'interval' => 3 * HOUR_IN_SECONDS,
-        'display' => 'Every 3 hours',
-    );
-    $schedules['d14k_every_6_hours'] = array(
-        'interval' => 6 * HOUR_IN_SECONDS,
-        'display' => 'Every 6 hours',
-    );
-    $schedules['d14k_every_12_hours'] = array(
-        'interval' => 12 * HOUR_IN_SECONDS,
-        'display' => 'Every 12 hours',
-    );
     $schedules['d14k_weekly'] = array(
         'interval' => 7 * DAY_IN_SECONDS,
         'display' => 'Once a week',

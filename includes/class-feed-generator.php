@@ -73,8 +73,14 @@ class D14K_Feed_Generator
     private function build_xml($lang)
     {
         $settings = get_option('d14k_feed_settings', array());
-        $brand = isset($settings['brand']) ? $settings['brand'] : get_bloginfo('name');
         $country = isset($settings['country_of_origin']) ? $settings['country_of_origin'] : 'UA';
+        $excluded_categories = isset($settings['excluded_categories']) ? array_map('intval', $settings['excluded_categories']) : array();
+        // Expand excluded_categories to include all WPML translations of each term
+        if (!empty($excluded_categories)) {
+            $excluded_categories = $this->expand_excluded_with_translations($excluded_categories);
+        }
+        $attribute_filters = isset($settings['attribute_filters']) ? $settings['attribute_filters'] : array();
+        $custom_rules = isset($settings['custom_rules']) ? $settings['custom_rules'] : array();
         $site_url = $this->wpml->get_home_url($lang);
         $site_name = get_bloginfo('name');
 
@@ -95,17 +101,33 @@ class D14K_Feed_Generator
             $product_id = $product->get_id();
 
             if ($product->is_type('simple')) {
+                // Category filter — excluded products are not counted in stats
+                if (!empty($excluded_categories) && $this->is_in_excluded_categories($product_id, $excluded_categories)) {
+                    continue;
+                }
+
                 // Handle simple product
                 $this->stats['total']++;
                 $image_id = $this->wpml->get_image_with_fallback($product_id, $product->get_image_id());
                 $gallery = $this->wpml->get_gallery_with_fallback($product_id, $product->get_gallery_image_ids());
                 $original_id = $this->wpml->get_original_id($product_id);
 
+                if (!empty($attribute_filters) && $this->is_excluded_by_attributes($product, $attribute_filters)) {
+                    $this->stats['skipped']++;
+                    continue;
+                }
+
+                if (!empty($custom_rules) && !$this->passes_custom_rules($product, $product, $custom_rules)) {
+                    $this->stats['skipped']++;
+                    continue;
+                }
+
                 if (!$this->validator->is_valid($product, $product, $image_id)) {
                     $this->stats['skipped']++;
                     continue;
                 }
 
+                $brand = $this->resolve_brand($product, $product, $settings);
                 $xml .= $this->build_item($product, $product, $image_id, $gallery, $original_id, $lang, $brand, $country, $settings);
                 $this->stats['valid']++;
 
@@ -113,6 +135,12 @@ class D14K_Feed_Generator
                 // Handle variable product
                 $parent = $product;
                 $parent_id = $parent->get_id();
+
+                // Category filter at parent level — skips all variations of excluded products
+                if (!empty($excluded_categories) && $this->is_in_excluded_categories($parent_id, $excluded_categories)) {
+                    continue;
+                }
+
                 $parent_image_id = $this->wpml->get_image_with_fallback($parent_id, $parent->get_image_id());
                 $parent_gallery = $this->wpml->get_gallery_with_fallback($parent_id, $parent->get_gallery_image_ids());
                 $original_id = $this->wpml->get_original_id($parent_id);
@@ -132,11 +160,22 @@ class D14K_Feed_Generator
                         $image_id = $parent_image_id;
                     }
 
+                    if (!empty($attribute_filters) && $this->is_excluded_by_attributes($variation, $attribute_filters)) {
+                        $this->stats['skipped']++;
+                        continue;
+                    }
+
+                    if (!empty($custom_rules) && !$this->passes_custom_rules($variation, $parent, $custom_rules)) {
+                        $this->stats['skipped']++;
+                        continue;
+                    }
+
                     if (!$this->validator->is_valid($variation, $parent, $image_id)) {
                         $this->stats['skipped']++;
                         continue;
                     }
 
+                    $brand = $this->resolve_brand($variation, $parent, $settings);
                     $xml .= $this->build_item($variation, $parent, $image_id, $parent_gallery, $original_id, $lang, $brand, $country, $settings);
                     $this->stats['valid']++;
                 }
@@ -299,11 +338,22 @@ class D14K_Feed_Generator
         $identifier_exists = $has_identifiers ? 'yes' : 'no';
         $xml .= "    <g:identifier_exists>{$identifier_exists}</g:identifier_exists>\n";
         $xml .= "    <g:is_bundle>no</g:is_bundle>\n";
-        $xml .= '    <g:country_of_origin>' . $this->esc($country) . "</g:country_of_origin>\n";
-        $xml .= "    <g:shipping>\n";
-        $xml .= "      <g:country>{$this->esc($country)}</g:country>\n";
-        $xml .= "      <g:price>0 {$currency}</g:price>\n";
-        $xml .= "    </g:shipping>\n";
+
+        // Custom Labels 0–4
+        $custom_labels = $this->resolve_custom_labels($variation, $parent, $settings, $title, $product_type);
+        for ($i = 0; $i <= 4; $i++) {
+            if (!empty($custom_labels[$i])) {
+                $xml .= "    <g:custom_label_{$i}>{$this->esc($custom_labels[$i])}</g:custom_label_{$i}>\n";
+            }
+        }
+
+        if (!empty($country)) {
+            $xml .= '    <g:country_of_origin>' . $this->esc($country) . "</g:country_of_origin>\n";
+            $xml .= "    <g:shipping>\n";
+            $xml .= "      <g:country>{$this->esc($country)}</g:country>\n";
+            $xml .= "      <g:price>0 {$currency}</g:price>\n";
+            $xml .= "    </g:shipping>\n";
+        }
         $xml .= "  </item>\n";
 
         return $xml;
@@ -347,5 +397,388 @@ class D14K_Feed_Generator
     {
         $text = str_replace(']]>', ']]]]><![CDATA[>', (string) $text);
         return '<![CDATA[' . $text . ']]>';
+    }
+
+    /**
+     * Resolves Custom Labels 0–4 for a product.
+     *
+     * Priority:
+     *   1. Per-product meta field (_d14k_custom_label_X)
+     *   2. Category label map (category_label_X_map) with WPML original term fallback
+     *
+     * Returns array of 5 values [0..4], empty string if not set.
+     */
+    private function resolve_custom_labels($product, $parent, $settings, $title, $product_type)
+    {
+        $cats = get_the_terms($parent->get_id(), 'product_cat');
+        $custom_labels = array();
+
+        for ($i = 0; $i <= 4; $i++) {
+            // 1. Per-product meta override
+            $cl = get_post_meta($parent->get_id(), '_d14k_custom_label_' . $i, true);
+
+            // 2. Category label map
+            if (empty($cl) && !empty($cats) && !is_wp_error($cats)) {
+                $map_key = 'category_label_' . $i . '_map';
+                $cl_map = isset($settings[$map_key]) ? $settings[$map_key] : array();
+
+                if (!empty($cl_map)) {
+                    // Check direct categories
+                    foreach ($cats as $cat) {
+                        $cat_id = $cat->term_id;
+                        $orig_id = $this->wpml ? $this->wpml->get_original_term_id($cat_id) : $cat_id;
+
+                        if (!empty($cl_map[$cat_id])) {
+                            $cl = $cl_map[$cat_id];
+                            break;
+                        } elseif ($orig_id !== $cat_id && !empty($cl_map[$orig_id])) {
+                            $cl = $cl_map[$orig_id];
+                            break;
+                        }
+                    }
+
+                    // Check parent categories (ancestors) if still empty
+                    if (empty($cl)) {
+                        foreach ($cats as $cat) {
+                            $ancestors = get_ancestors($cat->term_id, 'product_cat');
+                            if (!empty($ancestors)) {
+                                foreach ($ancestors as $ancestor_id) {
+                                    $orig_ancestor_id = $this->wpml ? $this->wpml->get_original_term_id($ancestor_id) : $ancestor_id;
+
+                                    if (!empty($cl_map[$ancestor_id])) {
+                                        $cl = $cl_map[$ancestor_id];
+                                        break 2;
+                                    } elseif ($orig_ancestor_id !== $ancestor_id && !empty($cl_map[$orig_ancestor_id])) {
+                                        $cl = $cl_map[$orig_ancestor_id];
+                                        break 2;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            $custom_labels[$i] = $cl;
+        }
+
+        return $custom_labels;
+    }
+
+    /**
+     * Evaluates all custom filter rules against a product/variation.
+     * Returns false if the product should be excluded from the feed.
+     *
+     * Rules logic:
+     *   action=exclude → if condition matches, product is excluded
+     *   action=include → if condition does NOT match, product is excluded (whitelist)
+     * All rules are evaluated; first match that triggers exclusion wins.
+     */
+    private function passes_custom_rules($product, $parent, $custom_rules)
+    {
+        foreach ($custom_rules as $rule) {
+            if (empty($rule['field']) || empty($rule['condition'])) {
+                continue;
+            }
+            $field = $rule['field'];
+            $meta_key = isset($rule['meta_key']) ? $rule['meta_key'] : '';
+            $cond = $rule['condition'];
+            $value = isset($rule['value']) ? $rule['value'] : '';
+            $action = isset($rule['action']) ? $rule['action'] : 'exclude';
+
+            $pval = $this->get_rule_field_value($product, $parent, $field, $meta_key);
+            $matches = $this->eval_rule_condition($pval, $cond, $value);
+
+            if ($action === 'exclude' && $matches) {
+                return false;
+            }
+            if ($action === 'include' && !$matches) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Reads the product/parent field value for a rule.
+     * Text values are returned lowercased for case-insensitive comparison.
+     * Numeric fields are returned as floats or null (no sale price).
+     */
+    private function get_rule_field_value($product, $parent, $field, $meta_key = '')
+    {
+        switch ($field) {
+            case 'title':
+                return strtolower($parent->get_name());
+
+            case 'sku':
+                return strtolower((string) $product->get_sku());
+
+            case 'regular_price':
+                $v = $product->get_regular_price();
+                return $v !== '' ? (float) $v : null;
+
+            case 'sale_price':
+                $v = $product->get_sale_price();
+                return $v !== '' ? (float) $v : null;
+
+            case 'stock_status':
+                return $product->get_stock_status(); // 'instock' | 'outofstock' | 'onbackorder'
+
+            case 'tag':
+                $terms = wp_get_object_terms($parent->get_id(), 'product_tag', array('fields' => 'names'));
+                if (is_wp_error($terms) || empty($terms)) {
+                    return '';
+                }
+                return strtolower(implode(',', $terms));
+
+            case 'custom_meta':
+                if (empty($meta_key)) {
+                    return '';
+                }
+                $v = get_post_meta($product->get_id(), $meta_key, true);
+                if ($v === '' || $v === false) {
+                    $v = get_post_meta($parent->get_id(), $meta_key, true);
+                }
+                return strtolower((string) $v);
+
+            default:
+                return '';
+        }
+    }
+
+    /**
+     * Evaluates a single condition. Returns true if it matches.
+     * Text comparisons are already lowercased before this call.
+     */
+    private function eval_rule_condition($pval, $cond, $rval)
+    {
+        $rval_lc = strtolower((string) $rval);
+        $pval_s = (string) $pval;
+
+        switch ($cond) {
+            case 'equals':
+                return $pval_s === $rval_lc;
+            case 'not_equals':
+                return $pval_s !== $rval_lc;
+            case 'contains':
+                return strpos($pval_s, $rval_lc) !== false;
+            case 'not_contains':
+                return strpos($pval_s, $rval_lc) === false;
+            case 'starts_with':
+                return strpos($pval_s, $rval_lc) === 0;
+            case 'ends_with':
+                return $rval_lc !== '' && substr($pval_s, -strlen($rval_lc)) === $rval_lc;
+            case 'gt':
+                return $pval !== null && is_numeric($pval) && (float) $pval > (float) $rval;
+            case 'lt':
+                return $pval !== null && is_numeric($pval) && (float) $pval < (float) $rval;
+            case 'gte':
+                return $pval !== null && is_numeric($pval) && (float) $pval >= (float) $rval;
+            case 'lte':
+                return $pval !== null && is_numeric($pval) && (float) $pval <= (float) $rval;
+            case 'is_empty':
+                return $pval === '' || $pval === null || $pval === false;
+            case 'not_empty':
+                return $pval !== '' && $pval !== null && $pval !== false;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Resolves the brand value for a product/variation based on settings.
+     *
+     * Modes:
+     *   'custom'    → returns the manually entered brand string.
+     *   'attribute' → reads the WC attribute taxonomy value from the parent product.
+     *                 Falls back to brand_fallback (or custom brand) when the attribute
+     *                 is absent or empty on the parent.
+     *
+     * For variable products, brand is always read from the parent (variable product),
+     * because brand is a non-variation attribute and is set at the parent level.
+     */
+    private function resolve_brand($product, $parent, $settings)
+    {
+        $mode = isset($settings['brand_mode']) ? $settings['brand_mode'] : 'custom';
+        $custom_brand = isset($settings['brand']) && $settings['brand'] !== ''
+            ? $settings['brand']
+            : get_bloginfo('name');
+
+        if ($mode !== 'attribute') {
+            return $custom_brand;
+        }
+
+        $attr_tax = isset($settings['brand_attribute']) ? $settings['brand_attribute'] : '';
+        $fallback = isset($settings['brand_fallback']) && $settings['brand_fallback'] !== ''
+            ? $settings['brand_fallback']
+            : $custom_brand;
+
+        if (empty($attr_tax)) {
+            return $fallback;
+        }
+
+        // Temporarily remove WPML filters that translate term IDs/names,
+        // so get_the_terms() returns the raw term names from wp_terms directly.
+        $parent_id = $parent->get_id();
+
+        $removed = array();
+        global $sitepress;
+        if (isset($sitepress)) {
+            if (has_filter('get_terms', array('WPML_Terms_Translations', 'get_terms_filter'))) {
+                remove_filter('get_terms', array('WPML_Terms_Translations', 'get_terms_filter'), 10);
+                $removed[] = 'get_terms';
+            }
+            if (has_filter('get_term', array($sitepress, 'get_term_adjust_id'))) {
+                remove_filter('get_term', array($sitepress, 'get_term_adjust_id'), 1);
+                $removed[] = 'get_term';
+            }
+        }
+
+        $terms = get_the_terms($parent_id, $attr_tax);
+
+        // Restore WPML filters
+        if (isset($sitepress)) {
+            if (in_array('get_terms', $removed)) {
+                add_filter('get_terms', array('WPML_Terms_Translations', 'get_terms_filter'), 10, 2);
+            }
+            if (in_array('get_term', $removed)) {
+                add_filter('get_term', array($sitepress, 'get_term_adjust_id'), 1, 1);
+            }
+        }
+
+        if ($terms && !is_wp_error($terms)) {
+            $names = array_map(function ($t) {
+                return html_entity_decode($t->name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }, $terms);
+            $brand_val = trim(implode(', ', $names));
+            return $brand_val !== '' ? $brand_val : $fallback;
+        }
+
+        // Fallback for non-taxonomy (custom text) attributes
+        $brand_val = trim((string) $parent->get_attribute($attr_tax));
+
+        return $brand_val !== '' ? $brand_val : $fallback;
+    }
+
+    /**
+     * Expands a list of term IDs to include all WPML translations (via trid).
+     * Excluding a UK category automatically excludes the same category in RU and other languages.
+     *
+     * @param array $term_ids Original term_ids to exclude
+     * @return array Expanded list including all translation term_ids
+     */
+    private function expand_excluded_with_translations($term_ids)
+    {
+        if (empty($term_ids)) {
+            return $term_ids;
+        }
+        global $wpdb;
+        $placeholders = implode(',', array_fill(0, count($term_ids), '%d'));
+        $trids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT DISTINCT trid FROM {$wpdb->prefix}icl_translations
+                 WHERE element_type = 'tax_product_cat'
+                 AND element_id IN ($placeholders)",
+                $term_ids
+            )
+        );
+        if (empty($trids)) {
+            return $term_ids;
+        }
+        $trid_ph = implode(',', array_fill(0, count($trids), '%d'));
+        $all_ids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT element_id FROM {$wpdb->prefix}icl_translations
+                 WHERE element_type = 'tax_product_cat'
+                 AND trid IN ($trid_ph)
+                 AND element_id IS NOT NULL",
+                $trids
+            )
+        );
+        return array_unique(array_map('intval', array_merge($term_ids, $all_ids)));
+    }
+
+    /**
+     * Returns true if the product belongs to any excluded category or any ancestor
+     * of its categories is excluded.
+     *
+     * Ancestor checking ensures that excluding a parent category also covers products
+     * that are only tagged with a child category (which is the normal WooCommerce
+     * behaviour — products in subcategories are not automatically assigned to parents).
+     */
+    private function is_in_excluded_categories($product_id, $excluded_categories)
+    {
+        $terms = get_the_terms($product_id, 'product_cat');
+        if (!$terms || is_wp_error($terms)) {
+            return false;
+        }
+        foreach ($terms as $term) {
+            // Direct match
+            if (in_array((int) $term->term_id, $excluded_categories, true)) {
+                return true;
+            }
+            // Check if any ancestor category is excluded
+            $ancestors = get_ancestors((int) $term->term_id, 'product_cat');
+            foreach ($ancestors as $ancestor_id) {
+                if (in_array((int) $ancestor_id, $excluded_categories, true)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if the product/variation should be excluded based on attribute filters.
+     *
+     * For variations: reads slug directly from variation attributes (taxonomy-based).
+     * For simple products: reads term slugs via wp_get_object_terms().
+     */
+    private function is_excluded_by_attributes($product, $attribute_filters)
+    {
+        foreach ($attribute_filters as $taxonomy => $filter) {
+            if (empty($filter['enabled']) || empty($filter['values'])) {
+                continue;
+            }
+
+            $mode = isset($filter['mode']) ? $filter['mode'] : 'exclude';
+            $filter_slugs = (array) $filter['values'];
+
+            if ($product->is_type('variation')) {
+                $variation_attrs = $product->get_variation_attributes();
+                $attr_key = 'attribute_' . $taxonomy;
+
+                if (!array_key_exists($attr_key, $variation_attrs)) {
+                    continue; // This attribute is not defined on this variation
+                }
+
+                $term_slug = $variation_attrs[$attr_key];
+                if ($term_slug === '') {
+                    continue; // "Any" value — no filtering possible
+                }
+
+                if ($mode === 'exclude' && in_array($term_slug, $filter_slugs, true)) {
+                    return true;
+                }
+                if ($mode === 'include' && !in_array($term_slug, $filter_slugs, true)) {
+                    return true;
+                }
+            } else {
+                // Simple product
+                $terms = wp_get_object_terms($product->get_id(), $taxonomy, array('fields' => 'slugs'));
+                if (is_wp_error($terms) || empty($terms)) {
+                    continue; // Product has no value for this attribute
+                }
+
+                if ($mode === 'exclude' && !empty(array_intersect($terms, $filter_slugs))) {
+                    return true;
+                }
+                if ($mode === 'include' && empty(array_intersect($terms, $filter_slugs))) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

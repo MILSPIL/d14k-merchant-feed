@@ -1,9 +1,10 @@
 <?php
 /**
- * Plugin Name: GMC Feed for WooCommerce
- * Description: Generate Google Merchant Center product feeds with support for simple/variable products and WPML.
- * Version: 1.0.19
+ * Plugin Name: MIL SPIL GMC Feed
+ * Description: Генерація фідів Google Merchant Center для WooCommerce. Підтримка варіативних товарів, WPML, Custom Labels, фільтрації за категоріями та атрибутами. | GMC feed generator with variable products, WPML, Custom Labels & advanced filtering.
+ * Version: 2.1.0
  * Author: MIL SPIL
+ * Author URI: https://milspil.net
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Text Domain: d14k-merchant-feed
@@ -13,7 +14,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('D14K_FEED_VERSION', '1.0.19');
+define('D14K_FEED_VERSION', '2.1.0');
+define('D14K_FEED_BASENAME', plugin_basename(__FILE__));
 define('D14K_FEED_PATH', plugin_dir_path(__FILE__));
 define('D14K_FEED_URL', plugin_dir_url(__FILE__));
 
@@ -82,7 +84,7 @@ function d14k_feed_init()
 {
     if (!class_exists('WooCommerce')) {
         add_action('admin_notices', function () {
-            echo '<div class="notice notice-error"><p><strong>GMC Feed for WooCommerce</strong> requires WooCommerce.</p></div>';
+            echo '<div class="notice notice-error"><p><strong>MIL SPIL GMC Feed</strong> потребує WooCommerce для роботи.</p></div>';
         });
         return;
     }
@@ -92,6 +94,7 @@ function d14k_feed_init()
     require_once D14K_FEED_PATH . 'includes/class-feed-generator.php';
     require_once D14K_FEED_PATH . 'includes/class-cron-manager.php';
     require_once D14K_FEED_PATH . 'includes/class-admin-settings.php';
+    require_once D14K_FEED_PATH . 'includes/class-product-meta.php';
 
     $wpml = new D14K_WPML_Handler();
     $validator = new D14K_Feed_Validator();
@@ -111,6 +114,13 @@ function d14k_feed_init()
     });
 }
 add_action('plugins_loaded', 'd14k_feed_init', 20);
+
+// Settings link on Plugins page
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), function ($links) {
+    $settings_url = admin_url('admin.php?page=d14k-merchant-feed');
+    array_unshift($links, '<a href="' . esc_url($settings_url) . '">Налаштування</a>');
+    return $links;
+});
 
 function d14k_feed_handle_request($generator)
 {

@@ -21,8 +21,8 @@ class D14K_Feed_Validator
         $this->errors = array();
         $id = $variation->get_id();
 
-        if (!is_a($variation, 'WC_Product_Variation')) {
-            $this->errors[$id][] = 'Not a valid WC_Product_Variation';
+        if (!is_a($variation, 'WC_Product_Variation') && !is_a($variation, 'WC_Product_Simple')) {
+            $this->errors[$id][] = 'Not a valid WC product (must be Simple or Variation)';
             return false;
         }
 
@@ -319,9 +319,12 @@ class D14K_Feed_Validator
         // Check condition (always 'new')
         $data['present_fields'][] = 'condition';
 
-        // Check brand
+        // Check brand — in attribute mode brand is resolved dynamically (always present via fallback)
+        $brand_mode = isset($settings['brand_mode']) ? $settings['brand_mode'] : 'custom';
         $brand = isset($settings['brand']) ? $settings['brand'] : '';
-        if (!empty($brand)) {
+        $brand_fallback = isset($settings['brand_fallback']) ? $settings['brand_fallback'] : '';
+        $brand_has_value = !empty($brand) || $brand_mode === 'attribute' || !empty($brand_fallback);
+        if ($brand_has_value) {
             $data['present_fields'][] = 'brand';
         } else {
             $data['missing_fields'][] = 'brand';

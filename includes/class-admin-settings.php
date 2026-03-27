@@ -58,8 +58,10 @@ class D14K_Admin_Settings
         if (strpos($hook, 'd14k-merchant-feed') === false) {
             return;
         }
-        wp_enqueue_style('d14k-admin', D14K_FEED_URL . 'assets/admin.css', array(), D14K_FEED_VERSION);
-        wp_enqueue_script('d14k-admin', D14K_FEED_URL . 'assets/admin.js', array(), D14K_FEED_VERSION, true);
+        $css_ver = D14K_FEED_VERSION . '.' . filemtime(D14K_FEED_PATH . 'assets/admin.css');
+        $js_ver = D14K_FEED_VERSION . '.' . filemtime(D14K_FEED_PATH . 'assets/admin.js');
+        wp_enqueue_style('d14k-admin', D14K_FEED_URL . 'assets/admin.css', array(), $css_ver);
+        wp_enqueue_script('d14k-admin', D14K_FEED_URL . 'assets/admin.js', array(), $js_ver, true);
     }
 
     public function render_page()
@@ -132,12 +134,13 @@ class D14K_Admin_Settings
 
         ?>
         <div class="wrap d14k-wrap">
+            <h1 style="display:none;"></h1> <!-- Catch WP admin notices here -->
 
             <!-- Plugin Header -->
             <div class="d14k-header">
                 <div class="d14k-header-icon">
-                    <img src="<?php echo esc_url( D14K_FEED_URL . 'assets/logo.png?v=3' ); ?>"
-                        alt="MIL SPIL GMC Feed" style="width:48px;height:48px;object-fit:contain;border-radius:8px;" />
+                    <img src="<?php echo esc_url(D14K_FEED_URL . 'assets/logo.png?v=3'); ?>" alt="MIL SPIL GMC Feed"
+                        style="width:48px;height:48px;object-fit:contain;border-radius:8px;" />
                 </div>
                 <div class="d14k-header-title">
                     <h1>MIL SPIL GMC Feed</h1>
@@ -172,7 +175,7 @@ class D14K_Admin_Settings
                 'settings' => array('label' => 'Налаштування', 'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'),
                 'mapping' => array('label' => 'Маппінг', 'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>'),
                 'filters' => array('label' => 'Фільтри', 'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>'),
-                'help' => array('label' => 'Довідка', 'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'),
+                'help' => array('label' => 'Довідка', 'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none"/></svg>'),
             );
             ?>
             <nav class="d14k-tabs">
@@ -688,9 +691,11 @@ class D14K_Admin_Settings
             <div class="d14k-tab-content<?php echo $current_tab === 'help' ? ' d14k-tab-content--active' : ''; ?>"
                 data-tab="help">
                 <div class="d14k-card">
-                    <div class="d14k-help-hero">
-                        <h2>Довідка та налаштування</h2>
-                        <p>Як працює кожен розділ плагіну, та рекомендації для найкращих результатів генерації фідів для Google Merchant Center.</p>
+                    <div class="d14k-help-content">
+                        <div class="d14k-help-hero">
+                            <h2>Довідка та налаштування</h2>
+                        <p>Як працює кожен розділ плагіну, та рекомендації для найкращих результатів генерації фідів для Google
+                            Merchant Center.</p>
                     </div>
                     <div class="d14k-help-grid">
 
@@ -705,7 +710,7 @@ class D14K_Admin_Settings
                             </div>
                             <h3>Фіди</h3>
                             <p>Моніторинг стану XML-фідів: URL, дата останньої генерації, кількість товарів, помилки. Кнопка
-                                «Згенерувати зараз» — примусова генерація поза розкладом.</p>
+                                «Згенерувати зараз» запускає примусову генерацію поза розкладом.</p>
                         </div>
 
                         <div class="d14k-help-item">
@@ -717,7 +722,8 @@ class D14K_Admin_Settings
                                 </svg>
                             </div>
                             <h3>Налаштування</h3>
-                            <p>Глобальні параметри: увімкнення автогенерації, інтервал (6 год / 12 год / щодня), назва бренду
+                            <p>Глобальні параметри: увімкнення автогенерації, час генерації (раз на добу), назва
+                                бренду
                                 або атрибут товару, країна походження, Google Product Category за замовчуванням.</p>
                         </div>
 
@@ -769,27 +775,34 @@ class D14K_Admin_Settings
                                 </svg>
                             </div>
                             <h3>Автоматична генерація</h3>
-                            <p>Плагін використовує WordPress Cron для автогенерації. Рекомендований інтервал: кожні 6 годин. Для
+                            <p>Плагін використовує WordPress Cron для автогенерації. Фіди генеруються раз на добу; час можна
+                                налаштувати під сканування Google Merchant Center (так само як і часовий пояс). Для
                                 продакшн-сайтів рекомендується замінити WP Cron на системний cron (crontab) для надійності.</p>
                         </div>
 
                     </div><!-- /.d14k-help-grid -->
+                    </div><!-- /.d14k-help-content -->
 
                     <div class="d14k-contact-banner">
                         <div class="d14k-contact-banner-icon">
-                            <img src="<?php echo esc_url( D14K_FEED_URL . 'assets/logo.png?v=2' ); ?>" alt="MSF" style="width:24px;height:24px;object-fit:contain;border-radius:4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                <circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none"></circle>
+                            </svg>
                         </div>
                         <div class="d14k-contact-banner-body">
-                            <p class="d14k-contact-banner-title">Маєте питання або знайшли баг?</p>
-                            <p class="d14k-contact-banner-text">Плагін активно розвивається. Якщо щось не працює, хочете нову функцію або маєте ідею покращення — пишіть напряму розробнику.</p>
-                            <a href="mailto:ms.milspil@gmail.com" class="d14k-contact-banner-link">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                                    <polyline points="22,6 12,13 2,6"/>
-                                </svg>
-                                ms.milspil@gmail.com
-                            </a>
+                            <span class="d14k-contact-banner-title">Маєте питання або знайшли баг?</span>
+                            <span class="d14k-contact-banner-text">Якщо щось не працює, хочете нову функцію або маєте ідею
+                                покращення, пишіть напряму розробнику.</span>
                         </div>
+                        <a href="mailto:ms.milspil@gmail.com" class="d14k-contact-banner-link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                <polyline points="22,6 12,13 2,6" />
+                            </svg>
+                            ms.milspil@gmail.com
+                        </a>
                     </div>
                 </div>
             </div><!-- /.d14k-tab-content[help] -->

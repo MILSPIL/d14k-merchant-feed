@@ -7,11 +7,13 @@ class D14K_Cron_Manager
 {
 
     private $generator;
+    private $yml_generator;
     private $wpml;
 
-    public function __construct($generator, $wpml)
+    public function __construct($generator, $yml_generator, $wpml)
     {
         $this->generator = $generator;
+        $this->yml_generator = $yml_generator;
         $this->wpml = $wpml;
         add_action('d14k_feed_cron_hook', array($this, 'execute'));
     }
@@ -19,17 +21,56 @@ class D14K_Cron_Manager
     public function execute()
     {
         $settings = get_option('d14k_feed_settings', array());
-        if (empty($settings['enabled'])) {
-            return;
-        }
-        $languages = $this->wpml->get_active_languages();
-        foreach ($languages as $lang) {
-            try {
-                $this->generator->generate($lang);
-            } catch (Exception $e) {
-                error_log('D14K Feed: Cron error [' . $lang . ']: ' . $e->getMessage());
+
+        // Generate GMC feeds
+        if (!empty($settings['enabled'])) {
+            $languages = $this->wpml->get_active_languages();
+            foreach ($languages as $lang) {
+                try {
+                    $this->generator->generate($lang);
+                } catch (Exception $e) {
+                    error_log('D14K Feed: Cron error [GMC/' . $lang . ']: ' . $e->getMessage());
+                }
             }
         }
+
+        // Generate YML feeds for enabled channels (single bilingual feed per channel)
+        $channels = isset($settings['yml_channels']) ? $settings['yml_channels'] : array();
+        foreach (D14K_YML_Generator::CHANNELS as $channel) {
+            if (empty($channels[$channel])) {
+                continue;
+            }
+            try {
+                $this->yml_generator->generate($channel);
+            } catch (Exception $e) {
+                error_log('D14K Feed: Cron error [YML/' . $channel . ']: ' . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * Force regeneration of all enabled YML feeds.
+     */
+    public function regenerate_yml_feeds()
+    {
+        $settings = get_option('d14k_feed_settings', array());
+        $channels = isset($settings['yml_channels']) ? $settings['yml_channels'] : array();
+        $results = array();
+
+        foreach (D14K_YML_Generator::CHANNELS as $channel) {
+            if (empty($channels[$channel])) {
+                continue;
+            }
+            try {
+                $ok = $this->yml_generator->generate($channel);
+                $results[$channel] = $ok;
+            } catch (Exception $e) {
+                $results[$channel] = false;
+                error_log('D14K Feed: Manual YML generation error [' . $channel . ']: ' . $e->getMessage());
+            }
+        }
+
+        return $results;
     }
 
     public function reschedule($interval)

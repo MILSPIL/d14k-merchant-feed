@@ -7,12 +7,14 @@ class D14K_Admin_Settings
 {
 
     private $generator;
+    private $yml_generator;
     private $wpml;
     private $cron;
 
-    public function __construct($generator, $wpml, $cron)
+    public function __construct($generator, $yml_generator, $wpml, $cron)
     {
         $this->generator = $generator;
+        $this->yml_generator = $yml_generator;
         $this->wpml = $wpml;
         $this->cron = $cron;
 
@@ -27,8 +29,8 @@ class D14K_Admin_Settings
     public function add_menu()
     {
         add_menu_page(
-            'MIL SPIL GMC Feed',
-            'MIL SPIL GMC Feed',
+            'MIL SPIL Feed Generator',
+            'MIL SPIL Feed',
             'manage_woocommerce',
             'd14k-merchant-feed',
             array($this, 'render_page'),
@@ -45,10 +47,10 @@ class D14K_Admin_Settings
 
         $admin_bar->add_node(array(
             'id' => 'd14k-merchant-feed-bar',
-            'title' => 'GMC Feed',
+            'title' => 'Feed Generator',
             'href' => admin_url('admin.php?page=d14k-merchant-feed'),
             'meta' => array(
-                'title' => 'Google Merchant Center Feed Settings',
+                'title' => 'Feed Generator Settings',
             ),
         ));
     }
@@ -139,12 +141,12 @@ class D14K_Admin_Settings
             <!-- Plugin Header -->
             <div class="d14k-header">
                 <div class="d14k-header-icon">
-                    <img src="<?php echo esc_url(D14K_FEED_URL . 'assets/logo.png?v=3'); ?>" alt="MIL SPIL GMC Feed"
+                    <img src="<?php echo esc_url(D14K_FEED_URL . 'assets/logo.png?v=3'); ?>" alt="MIL SPIL Feed Generator"
                         style="width:48px;height:48px;object-fit:contain;border-radius:8px;" />
                 </div>
                 <div class="d14k-header-title">
-                    <h1>MIL SPIL GMC Feed</h1>
-                    <p>Google Merchant Center XML Feed для WooCommerce</p>
+                    <h1>MIL SPIL Feed Generator</h1>
+                    <p>Google Merchant Center + Маркетплейси (Horoshop, Prom.ua, Rozetka)</p>
                 </div>
                 <span class="d14k-version-badge">v<?php echo esc_html(D14K_FEED_VERSION); ?></span>
             </div>
@@ -247,6 +249,84 @@ class D14K_Admin_Settings
                     </form>
 
                     <!-- Disclaimer Box was here, moved out -->
+                </div>
+
+                <!-- Marketplace Feed Channels -->
+                <div class="d14k-card" style="margin-top:0;">
+                    <h2>🏪 Маркетплейси (YML фіди)</h2>
+                    <p>Увімкніть канали для генерації YML-фідів. Фіди генеруються автоматично разом з GMC-фідами за розкладом.</p>
+                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                        <?php wp_nonce_field('d14k_save_settings'); ?>
+                        <input type="hidden" name="action" value="d14k_save_settings">
+                        <input type="hidden" name="d14k_tab" value="feeds">
+                        <?php
+                        $yml_channels = isset($settings['yml_channels']) ? $settings['yml_channels'] : array();
+                        $channel_labels = array(
+                            'horoshop' => array('name' => 'Horoshop', 'desc' => 'YML імпорт для Horoshop (щоденне автооновлення)'),
+                            'prom' => array('name' => 'Prom.ua', 'desc' => 'YML фід для маркетплейсу Prom (on-the-fly по URL)'),
+                            'rozetka' => array('name' => 'Rozetka', 'desc' => 'YML фід для Rozetka (опитування щогодини)'),
+                        );
+                        ?>
+                        <table class="widefat striped">
+                            <thead>
+                                <tr>
+                                    <th style="width:50px;">Вкл.</th>
+                                    <th>Канал</th>
+                                    <th>URL фіди</th>
+                                    <th>Останнє оновлення</th>
+                                    <th>Товарів</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($channel_labels as $ch_key => $ch_data):
+                                    $ch_enabled = !empty($yml_channels[$ch_key]);
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" name="yml_channels[<?php echo esc_attr($ch_key); ?>]" value="1" <?php checked($ch_enabled); ?>>
+                                        </td>
+                                        <td>
+                                            <strong><?php echo esc_html($ch_data['name']); ?></strong><br>
+                                            <small style="color:#666;"><?php echo esc_html($ch_data['desc']); ?></small>
+                                        </td>
+                                        <td>
+                                            <?php if ($ch_enabled):
+                                                $yml_url = $this->yml_generator->get_feed_url($ch_key);
+                                                $url_id = "yml-url-{$ch_key}";
+                                                ?>
+                                                <code id="<?php echo esc_attr($url_id); ?>"><?php echo esc_url($yml_url); ?></code>
+                                                <button type="button" class="button button-small d14k-copy"
+                                                    data-target="<?php echo esc_attr($url_id); ?>">Копіювати</button>
+                                                <br><small style="color:#666;">Білінгвальний фід (RU + UA)</small>
+                                            <?php else: ?>
+                                                <span style="color:#999;">Канал вимкнено</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($ch_enabled):
+                                                $yml_gen = $this->yml_generator->get_last_generated($ch_key);
+                                                echo esc_html($yml_gen ? $yml_gen : '—');
+                                            else: ?>
+                                                <span style="color:#999;">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($ch_enabled):
+                                                $yml_stats = $this->yml_generator->get_last_stats($ch_key);
+                                                $yml_count = $yml_stats ? $yml_stats['valid'] : '—';
+                                                echo esc_html($yml_count);
+                                            else: ?>
+                                                <span style="color:#999;">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <p class="submit" style="margin-top:10px;">
+                            <button type="submit" class="button button-primary">Зберегти канали</button>
+                        </p>
+                    </form>
                 </div>
                 
                 <!-- Disclaimer Box -->
@@ -1071,7 +1151,18 @@ class D14K_Admin_Settings
             );
         }
 
+        // Marketplace YML channels (preserve existing if not posted from feeds tab)
         $old_settings = get_option('d14k_feed_settings', array());
+        if (isset($_POST['yml_channels'])) {
+            $yml_channels = array();
+            foreach (D14K_YML_Generator::CHANNELS as $ch) {
+                $yml_channels[$ch] = !empty($_POST['yml_channels'][$ch]);
+            }
+            $settings['yml_channels'] = $yml_channels;
+        } elseif (isset($old_settings['yml_channels'])) {
+            $settings['yml_channels'] = $old_settings['yml_channels'];
+        }
+
         update_option('d14k_feed_settings', $settings);
 
         $old_time = isset($old_settings['cron_time']) ? $old_settings['cron_time'] : '';

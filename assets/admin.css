@@ -248,7 +248,7 @@
 }
 
 .d14k-card>form,
-.d14k-card>div:not(.d14k-cat-toolbar):not(#d14kCatTree):not(.d14k-help-content):not(.d14k-contact-banner) {
+.d14k-card>div:not(.d14k-cat-toolbar):not(#d14kCatTree):not(.d14k-help-content):not(.d14k-contact-banner):not(.d14k-notice-box) {
     padding: 0 22px;
 }
 
@@ -1109,7 +1109,7 @@
     }
 
     .d14k-card>form,
-    .d14k-card>div:not(.d14k-cat-toolbar):not(#d14kCatTree):not(.d14k-help-content):not(.d14k-contact-banner) {
+    .d14k-card>div:not(.d14k-cat-toolbar):not(#d14kCatTree):not(.d14k-help-content):not(.d14k-contact-banner):not(.d14k-notice-box) {
         padding: 0 14px;
     }
 

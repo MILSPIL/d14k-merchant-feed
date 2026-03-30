@@ -409,7 +409,7 @@ class D14K_Admin_Settings
 
                     <!-- Horoshop Category Warning -->
                     <?php if ($horoshop_enabled): ?>
-                        <div class="d14k-notice-box d14k-notice-box--warning" style="margin:12px 16px;">
+                        <div class="d14k-notice-box d14k-notice-box--warning" style="margin:16px;">
                             <div class="d14k-notice-box-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -472,9 +472,9 @@ class D14K_Admin_Settings
                         <thead>
                             <tr>
                                 <th style="width:40px;"></th>
-                                <th>Параметр</th>
-                                <th>Значення</th>
-                                <th>Рекомендовано</th>
+                                <th style="width:50%;">Параметр</th>
+                                <th style="width:20%;">Значення</th>
+                                <th style="width:auto;">Рекомендовано</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -486,10 +486,8 @@ class D14K_Admin_Settings
                             </tr>
                             <tr>
                                 <td><?php echo $mem_rec ? '🟢' : ($mem_ok ? '🟡' : '🔴'); ?></td>
-                                <td>
-                                    <strong>Пам'ять (memory_limit)</strong><br>
-                                    <small style="color:#666;">Потрібна для конвертації WebP → JPG</small>
-                                </td>
+                                <td><strong>Пам'ять (memory_limit)</strong> <span style="color:#94a3b8;">— Потрібна для
+                                        конвертації WebP → JPG</span></td>
                                 <td><?php echo esc_html(ini_get('memory_limit')); ?></td>
                                 <td>≥ 256M (мін. 128M)</td>
                             </tr>
@@ -507,19 +505,15 @@ class D14K_Admin_Settings
                             </tr>
                             <tr>
                                 <td><?php echo $exec_ok ? '🟢' : '🟡'; ?></td>
-                                <td>
-                                    <strong>Час виконання (max_execution_time)</strong><br>
-                                    <small style="color:#666;">Впливає на генерацію великих фідів</small>
-                                </td>
+                                <td><strong>Час виконання (max_execution_time)</strong> <span style="color:#94a3b8;">— Впливає
+                                        на генерацію великих фідів</span></td>
                                 <td><?php echo $exec_time === 0 ? 'Необмежено' : esc_html($exec_time) . 's'; ?></td>
                                 <td>≥ 120s або без обмежень</td>
                             </tr>
                             <tr>
                                 <td><?php echo $dir_writable ? '🟢' : '🔴'; ?></td>
-                                <td>
-                                    <strong>Запис в uploads</strong><br>
-                                    <small style="color:#666;">Для кешу зображень та XML файлів</small>
-                                </td>
+                                <td><strong>Запис в uploads</strong> <span style="color:#94a3b8;">— Для кешу зображень та XML
+                                        файлів</span></td>
                                 <td><?php echo $dir_writable ? 'Доступно' : 'Заблоковано'; ?></td>
                                 <td>Обов'язково</td>
                             </tr>
@@ -1146,152 +1140,152 @@ class D14K_Admin_Settings
         </div>
 
         <script>
-            document.querySelectorAll('.d14k-copy').forE        ach(function (b              tn) {
-                btn.addEventListener('click', function () {
-                    var el = document.getElementById(this.dataset.target);
-                    navigator.clipboard.writeText(el.textContent).then(function () {
-                        btn.textContent = 'Скопійовано!';
-                        setTimeout(function () { btn.textContent = 'Копіювати'; }, 1500);
-                    });
-                });
-            });
+                  document.querySelectorAll('.d14k-copy').forE        ach(function (b              tn) {
+                                btn.addEventListener('click', function () {
+                                    var el = document.getElementById(this.dataset.target);
+                                    navigator.clipboard.writeText(el.textContent).then(function () {
+                                        btn.textContent = 'Скопійовано!';
+                                        setTimeout(function () { btn.textContent = 'Копіювати'; }, 1500);
+                                    });
+                                });
+                            });
 
-            // ---- Brand mode toggle ----
-            document.querySelectorAll('.d14k-brand-mode').forEach(function (radio) {
-                radio.addEventListener('change', function () {
-                    document.getElementById('d14k-brand-custom-wrap').style.display = this.value === 'custom' ? '' : 'none';
-                    document.getElementById('d14k-brand-attr-wrap').style.display = this.value === 'attribute' ? '' : 'none';
-                });
-            });
+                            // ---- Brand mode toggle ----
+                            document.querySelectorAll('.d14k-brand-mode').forEach(function (radio) {
+                                radio.addEventListener('change', function () {
+                                    document.getElementById('d14k-brand-custom-wrap').style.display = this.value === 'custom' ? '' : 'none';
+                                    document.getElementById('d14k-brand-attr-wrap').style.display = this.value === 'attribute' ? '' : 'none';
+                                });
+                            });
 
-            // ---- Category exclusion cascade ----
-            var d14kCatCbs = Array.from(document.querySelectorAll('.d14k-cat-cb'));
-            function d14kGetCatDescendants(parentId) {
-                var result = [];
-                d14kCatCbs.forEach(function (cb) {
-                    if (parseInt(cb.dataset.parent, 10) === parentId) {
-                        result.push(cb);
-                        d14kGetCatDescendants(parseInt(cb.dataset.id, 10)).forEach(function (d) { result.push(d); });
-                    }
-                });
-                return result;
-            }
-            d14kCatCbs.forEach(function (cb) {
-                cb.addEventListener('change', function () {
-                    d14kGetCatDescendants(parseInt(this.dataset.id, 10)).forEach(function (child) {
-                        child.checked = cb.checked;
-                    });
-                });
-            });
+                            // ---- Category exclusion cascade ----
+                            var d14kCatCbs = Array.from(document.querySelectorAll('.d14k-cat-cb'));
+                            function d14kGetCatDescendants(parentId) {
+                                var result = [];
+                                d14kCatCbs.forEach(function (cb) {
+                                    if (parseInt(cb.dataset.parent, 10) === parentId) {
+                                        result.push(cb);
+                                        d14kGetCatDescendants(parseInt(cb.dataset.id, 10)).forEach(function (d) { result.push(d); });
+                                    }
+                                });
+                                return result;
+                            }
+                            d14kCatCbs.forEach(function (cb) {
+                                cb.addEventListener('change', function () {
+                                    d14kGetCatDescendants(parseInt(this.dataset.id, 10)).forEach(function (child) {
+                                        child.checked = cb.checked;
+                                    });
+                                });
+                            });
 
-            document.querySelectorAll('.d14k-attr-enable').forEach(function (cb) {
-                cb.addEventListener('change', function () {
-                    var body = this.closest('.d14k-attr-filter-block').querySelector('.d14k-attr-filter-body');
-                    body.style.display = this.checked ? '' : 'none';
-                });
-            });
+                            document.querySelectorAll('.d14k-attr-enable').forEach(function (cb) {
+                                cb.addEventListener('change', function () {
+                                    var body = this.closest('.d14k-attr-filter-block').querySelector('.d14k-attr-filter-body');
+                                    body.style.display = this.checked ? '' : 'none';
+                                });
+                            });
 
-            // ---- Розширені правила фільтрації ----
-            var d14kRuleFieldsData = <?php
-            $jfields = array();
-            foreach ($rule_fields as $k => $v) {
-                $jfields[] = array('value' => $k, 'label' => $v['label'], 'type' => $v['type']);
-            }
-            echo json_encode($jfields);
-            ?>;
-            var d14kCondsByType = <?php echo json_encode($rule_conditions); ?>;
-            var d14kStatusVals = [{ v: 'instock', l: 'В наявності' }, { v: 'outofstock', l: 'Немає в наявності' }, { v: 'onbackorder', l: 'Під замовлення' }];
-            var d14kNoValConds = ['is_empty', 'not_empty'];
-            var d14kRuleIdx = <?php echo count($custom_rules); ?>;
+                            // ---- Розширені правила фільтрації ----
+                            var d14kRuleFieldsData = <?php
+                            $jfields = array();
+                            foreach ($rule_fields as $k => $v) {
+                                $jfields[] = array('value' => $k, 'label' => $v['label'], 'type' => $v['type']);
+                            }
+                            echo json_encode($jfields);
+                            ?>;
+                            var d14kCondsByType = <?php echo json_encode($rule_conditions); ?>;
+                            var d14kStatusVals = [{ v: 'instock', l: 'В наявності' }, { v: 'outofstock', l: 'Немає в наявності' }, { v: 'onbackorder', l: 'Під замовлення' }];
+                            var d14kNoValConds = ['is_empty', 'not_empty'];
+                            var d14kRuleIdx = <?php echo count($custom_rules); ?>;
 
-            function d14kEsc(s) {
-                return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            }
-            function d14kFieldType(fval) {
-                var f = d14kRuleFieldsData.find(function (x) { return x.value === fval; });
-                return f ? f.type : 'text';
-            }
-            function d14kBuildCondSelect(idx, ftype, selCond) {
-                var conds = d14kCondsByType[ftype] || d14kCondsByType['text'];
-                var h = '<select name="custom_rules[' + idx + '][condition]" class="d14k-rule-condition" style="width:auto;">';
-                Object.keys(conds).forEach(function (k) { h += '<option value="' + k + '"' + (k === selCond ? ' selected' : '') + '>' + conds[k] + '</option>'; });
-                return h + '</select>';
-            }
-            function d14kBuildValInput(idx, ftype, cond, val) {
-                var hide = d14kNoValConds.indexOf(cond) !== -1 ? 'display:none;' : '';
-                if (ftype === 'status') {
-                    var h = '<select name="custom_rules[' + idx + '][value]" class="d14k-rule-value" style="width:auto;' + hide + '">';
-                    d14kStatusVals.forEach(function (s) { h += '<option value="' + s.v + '"' + (s.v === val ? ' selected' : '') + '>' + s.l + '</option>'; });
-                    return h + '</select>';
-                }
-                var itype = ftype === 'number' ? 'number' : 'text';
-                return '<input type="' + itype + '" name="custom_rules[' + idx + '][value]" class="d14k-rule-value" value="' + d14kEsc(val) + '" placeholder="Значення" style="width:130px;' + hide + '">';
-            }
-            function d14kCreateRow(idx, saved) {
-                saved = saved || {};
-                var field = saved.field || 'title';
-                var mk = saved.meta_key || '';
-                var cond = saved.condition || 'contains';
-                var val = saved.value || '';
-                var action = saved.action || 'exclude';
-                var ftype = d14kFieldType(field);
-                var fsHtml = '<select name="custom_rules[' + idx + '][field]" class="d14k-rule-field" style="width:auto;">';
-                d14kRuleFieldsData.forEach(function (f) { fsHtml += '<option value="' + f.value + '"' + (f.value === field ? ' selected' : '') + '>' + f.label + '</option>'; });
-                fsHtml += '</select>';
-                var tr = document.createElement('tr');
-                tr.className = 'd14k-rule-row';
-                tr.innerHTML =
-                    '<td>' + fsHtml + '</td>' +
-                    '<td><input type="text" name="custom_rules[' + idx + '][meta_key]" class="d14k-rule-meta-key" value="' + d14kEsc(mk) + '" placeholder="напр. _weight" style="width:110px;' + (ftype !== 'meta' ? 'display:none;' : '') + '"></td>' +
-                    '<td>' + d14kBuildCondSelect(idx, ftype, cond) + '</td>' +
-                    '<td>' + d14kBuildValInput(idx, ftype, cond, val) + '</td>' +
-                    '<td><select name="custom_rules[' + idx + '][action]" style="width:auto;"><option value="exclude"' + (action === 'exclude' ? ' selected' : '') + '>Виключити</option><option value="include"' + (action === 'include' ? ' selected' : '') + '>Включити тільки</option></select></td>' +
-                    '<td><button type="button" class="button d14k-remove-rule">✕</button></td>';
-                d14kInitRow(tr);
-                return tr;
-            }
-            function d14kRebuildCondSelect(row, field, keepCond) {
-                var ftype = d14kFieldType(field);
-                var conds = d14kCondsByType[ftype] || d14kCondsByType['text'];
-                var sel = row.querySelector('.d14k-rule-condition');
-                var prev = keepCond || sel.value;
-                sel.innerHTML = '';
-                Object.keys(conds).forEach(function (k) {
-                    var o = document.createElement('option');
-                    o.value = k; o.textContent = conds[k];
-                    if (k === prev) o.selected = true;
-                    sel.appendChild(o);
-                });
-            }
-            function d14kRebuildValInput(row, ftype, cond) {
-                var valCell = row.querySelector('.d14k-rule-value').closest('td');
-                var oldVal = row.querySelector('.d14k-rule-value').value || '';
-                var m = row.querySelector('[name*="[field]"]').name.match(/\[(\d+)\]/);
-                var idx = m ? m[1] : 0;
-                valCell.innerHTML = d14kBuildValInput(idx, ftype, cond, oldVal);
-            }
-            function d14kInitRow(row) {
-                var fs = row.querySelector('.d14k-rule-field');
-                var cs = row.querySelector('.d14k-rule-condition');
-                var mk = row.querySelector('.d14k-rule-meta-key');
-                var rm = row.querySelector('.d14k-remove-rule');
-                fs.addEventListener('change', function () {
-                    var ftype = d14kFieldType(this.value);
-                    if (mk) mk.style.display = ftype === 'meta' ? '' : 'none';
-                    d14kRebuildCondSelect(row, this.value, null);
-                    d14kRebuildValInput(row, ftype, cs.value);
-                });
-                cs.addEventListener('change', function () {
-                    d14kRebuildValInput(row, d14kFieldType(fs.value), this.value);
-                });
-                rm.addEventListener('click', function () { row.parentNode.removeChild(row); });
-            }
-            document.querySelectorAll('.d14k-rule-row').forEach(function (r) { d14kInitRow(r); });
-            document.getElementById('d14k-add-rule').addEventListener('click', function () {
-                document.getElementById('d14k-rules-body').appendChild(d14kCreateRow(d14kRuleIdx++));
-            });
-        </script>
-        <?php
+                            function d14kEsc(s) {
+                                return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            }
+                            function d14kFieldType(fval) {
+                                var f = d14kRuleFieldsData.find(function (x) { return x.value === fval; });
+                                return f ? f.type : 'text';
+                            }
+                            function d14kBuildCondSelect(idx, ftype, selCond) {
+                                var conds = d14kCondsByType[ftype] || d14kCondsByType['text'];
+                                var h = '<select name="custom_rules[' + idx + '][condition]" class="d14k-rule-condition" style="width:auto;">';
+                                Object.keys(conds).forEach(function (k) { h += '<option value="' + k + '"' + (k === selCond ? ' selected' : '') + '>' + conds[k] + '</option>'; });
+                                return h + '</select>';
+                            }
+                            function d14kBuildValInput(idx, ftype, cond, val) {
+                                var hide = d14kNoValConds.indexOf(cond) !== -1 ? 'display:none;' : '';
+                                if (ftype === 'status') {
+                                    var h = '<select name="custom_rules[' + idx + '][value]" class="d14k-rule-value" style="width:auto;' + hide + '">';
+                                    d14kStatusVals.forEach(function (s) { h += '<option value="' + s.v + '"' + (s.v === val ? ' selected' : '') + '>' + s.l + '</option>'; });
+                                    return h + '</select>';
+                                }
+                                var itype = ftype === 'number' ? 'number' : 'text';
+                                return '<input type="' + itype + '" name="custom_rules[' + idx + '][value]" class="d14k-rule-value" value="' + d14kEsc(val) + '" placeholder="Значення" style="width:130px;' + hide + '">';
+                            }
+                            function d14kCreateRow(idx, saved) {
+                                saved = saved || {};
+                                var field = saved.field || 'title';
+                                var mk = saved.meta_key || '';
+                                var cond = saved.condition || 'contains';
+                                var val = saved.value || '';
+                                var action = saved.action || 'exclude';
+                                var ftype = d14kFieldType(field);
+                                var fsHtml = '<select name="custom_rules[' + idx + '][field]" class="d14k-rule-field" style="width:auto;">';
+                                d14kRuleFieldsData.forEach(function (f) { fsHtml += '<option value="' + f.value + '"' + (f.value === field ? ' selected' : '') + '>' + f.label + '</option>'; });
+                                fsHtml += '</select>';
+                                var tr = document.createElement('tr');
+                                tr.className = 'd14k-rule-row';
+                                tr.innerHTML =
+                                    '<td>' + fsHtml + '</td>' +
+                                    '<td><input type="text" name="custom_rules[' + idx + '][meta_key]" class="d14k-rule-meta-key" value="' + d14kEsc(mk) + '" placeholder="напр. _weight" style="width:110px;' + (ftype !== 'meta' ? 'display:none;' : '') + '"></td>' +
+                                    '<td>' + d14kBuildCondSelect(idx, ftype, cond) + '</td>' +
+                                    '<td>' + d14kBuildValInput(idx, ftype, cond, val) + '</td>' +
+                                    '<td><select name="custom_rules[' + idx + '][action]" style="width:auto;"><option value="exclude"' + (action === 'exclude' ? ' selected' : '') + '>Виключити</option><option value="include"' + (action === 'include' ? ' selected' : '') + '>Включити тільки</option></select></td>' +
+                                    '<td><button type="button" class="button d14k-remove-rule">✕</button></td>';
+                                d14kInitRow(tr);
+                                return tr;
+                            }
+                            function d14kRebuildCondSelect(row, field, keepCond) {
+                                var ftype = d14kFieldType(field);
+                                var conds = d14kCondsByType[ftype] || d14kCondsByType['text'];
+                                var sel = row.querySelector('.d14k-rule-condition');
+                                var prev = keepCond || sel.value;
+                                sel.innerHTML = '';
+                                Object.keys(conds).forEach(function (k) {
+                                    var o = document.createElement('option');
+                                    o.value = k; o.textContent = conds[k];
+                                    if (k === prev) o.selected = true;
+                                    sel.appendChild(o);
+                                });
+                            }
+                            function d14kRebuildValInput(row, ftype, cond) {
+                                var valCell = row.querySelector('.d14k-rule-value').closest('td');
+                                var oldVal = row.querySelector('.d14k-rule-value').value || '';
+                                var m = row.querySelector('[name*="[field]"]').name.match(/\[(\d+)\]/);
+                                var idx = m ? m[1] : 0;
+                                valCell.innerHTML = d14kBuildValInput(idx, ftype, cond, oldVal);
+                            }
+                            function d14kInitRow(row) {
+                                var fs = row.querySelector('.d14k-rule-field');
+                                var cs = row.querySelector('.d14k-rule-condition');
+                                var mk = row.querySelector('.d14k-rule-meta-key');
+                                var rm = row.querySelector('.d14k-remove-rule');
+                                fs.addEventListener('change', function () {
+                                    var ftype = d14kFieldType(this.value);
+                                    if (mk) mk.style.display = ftype === 'meta' ? '' : 'none';
+                                    d14kRebuildCondSelect(row, this.value, null);
+                                    d14kRebuildValInput(row, ftype, cs.value);
+                                });
+                                cs.addEventListener('change', function () {
+                                    d14kRebuildValInput(row, d14kFieldType(fs.value), this.value);
+                                });
+                                rm.addEventListener('click', function () { row.parentNode.removeChild(row); });
+                            }
+                            document.querySelectorAll('.d14k-rule-row').forEach(function (r) { d14kInitRow(r); });
+                            document.getElementById('d14k-add-rule').addEventListener('click', function () {
+                                document.getElementById('d14k-rules-body').appendChild(d14kCreateRow(d14kRuleIdx++));
+                            });
+                        </script>
+                        <?php
     }
 
     public function save_settings()
@@ -1552,101 +1546,101 @@ class D14K_Admin_Settings
         $percentage = $total > 0 ? round(($valid / $total) * 100) : 0;
 
         ?>
-        <div class="d14k-card">
-            <h2>🔍 Результати тестової валідації</h2>
+                        <div class="d14k-card">
+                            <h2>🔍 Результати тестової валідації</h2>
 
-            <div style="background: #f0f0f1; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
-                <h3 style="margin-top: 0;">Загальна статистика</h3>
-                <p style="font-size: 16px; margin: 10px 0;">
-                    <strong>Перевірено товарів:</strong> <?php echo (int) $total; ?><br>
-                    <strong style="color: #46b450;">✅ Валідних:</strong> <?php echo (int) $valid; ?>
-                    (<?php echo (int) $percentage; ?>%)<br>
-                    <strong style="color: #dc3232;">❌ З помилками:</strong> <?php echo (int) $invalid; ?>
-                    (<?php echo (int) (100 - $percentage); ?>%)
-                </p>
-            </div>
+                            <div style="background: #f0f0f1; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                                <h3 style="margin-top: 0;">Загальна статистика</h3>
+                                <p style="font-size: 16px; margin: 10px 0;">
+                                    <strong>Перевірено товарів:</strong> <?php echo (int) $total; ?><br>
+                                    <strong style="color: #46b450;">✅ Валідних:</strong> <?php echo (int) $valid; ?>
+                                    (<?php echo (int) $percentage; ?>%)<br>
+                                    <strong style="color: #dc3232;">❌ З помилками:</strong> <?php echo (int) $invalid; ?>
+                                    (<?php echo (int) (100 - $percentage); ?>%)
+                                </p>
+                            </div>
 
-            <?php if (!empty($report['sample_item_xml'])): ?>
-                <div style="margin-bottom: 30px;">
-                    <h3>📦 Приклад даних (XML)</h3>
-                    <p class="description" style="margin-bottom: 10px;">Так виглядатиме перший пройдений товар у файлі фіда.
-                        Перевірте теги та атрибути.</p>
-                    <textarea readonly
-                        style="width: 100%; height: 300px; font-family: monospace; font-size: 12px; background: #282c34; color: #abb2bf; border-radius: 4px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; white-space: pre;"><?php echo esc_textarea($report['sample_item_xml']); ?></textarea>
-                </div>
-            <?php endif; ?>
+                            <?php if (!empty($report['sample_item_xml'])): ?>
+                                        <div style="margin-bottom: 30px;">
+                                            <h3>📦 Приклад даних (XML)</h3>
+                                            <p class="description" style="margin-bottom: 10px;">Так виглядатиме перший пройдений товар у файлі фіда.
+                                                Перевірте теги та атрибути.</p>
+                                            <textarea readonly
+                                                style="width: 100%; height: 300px; font-family: monospace; font-size: 12px; background: #282c34; color: #abb2bf; border-radius: 4px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; white-space: pre;"><?php echo esc_textarea($report['sample_item_xml']); ?></textarea>
+                                        </div>
+                            <?php endif; ?>
 
-            <h3>Статистика по полях</h3>
-            <table class="wp-list-table widefat fixed striped">
-                <thead>
-                    <tr>
-                        <th>Поле</th>
-                        <th>Присутнє</th>
-                        <th>Відсутнє</th>
-                        <th>Статус</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($report['fields_stats'] as $field => $stats):
-                        $present = $stats['present'];
-                        $missing = $stats['missing'];
-                        $is_ok = $missing === 0;
-                        $status_color = $is_ok ? '#46b450' : '#dc3232';
-                        $status_icon = $is_ok ? '✅' : '⚠️';
-                        ?>
-                        <tr>
-                            <td><strong><?php echo esc_html($stats['label']); ?></strong></td>
-                            <td><?php echo (int) $present; ?>/<?php echo (int) $total; ?></td>
-                            <td style="color: <?php echo $missing > 0 ? '#dc3232' : '#666'; ?>;"><?php echo (int) $missing; ?></td>
-                            <td style="color: <?php echo esc_attr($status_color); ?>; font-size: 18px;">
-                                <?php echo $status_icon; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                            <h3>Статистика по полях</h3>
+                            <table class="wp-list-table widefat fixed striped">
+                                <thead>
+                                    <tr>
+                                        <th>Поле</th>
+                                        <th>Присутнє</th>
+                                        <th>Відсутнє</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($report['fields_stats'] as $field => $stats):
+                                        $present = $stats['present'];
+                                        $missing = $stats['missing'];
+                                        $is_ok = $missing === 0;
+                                        $status_color = $is_ok ? '#46b450' : '#dc3232';
+                                        $status_icon = $is_ok ? '✅' : '⚠️';
+                                        ?>
+                                                <tr>
+                                                    <td><strong><?php echo esc_html($stats['label']); ?></strong></td>
+                                                    <td><?php echo (int) $present; ?>/<?php echo (int) $total; ?></td>
+                                                    <td style="color: <?php echo $missing > 0 ? '#dc3232' : '#666'; ?>;"><?php echo (int) $missing; ?></td>
+                                                    <td style="color: <?php echo esc_attr($status_color); ?>; font-size: 18px;">
+                                                        <?php echo $status_icon; ?>
+                                                    </td>
+                                                </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
 
-            <h3 style="margin-top: 30px;">Детальний список товарів</h3>
-            <table class="wp-list-table widefat fixed striped">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Назва товару</th>
-                        <th>Статус</th>
-                        <th>Відсутні поля</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($report['products'] as $product):
-                        $status_color = $product['is_valid'] ? '#46b450' : '#dc3232';
-                        $status_text = $product['is_valid'] ? '✅ Валідний' : '❌ Помилки';
-                        ?>
-                        <tr>
-                            <td><?php echo (int) $product['id']; ?></td>
-                            <td><?php echo esc_html($product['title']); ?></td>
-                            <td style="color: <?php echo esc_attr($status_color); ?>; font-weight: bold;">
-                                <?php echo $status_text; ?>
-                            </td>
-                            <td>
-                                <?php if (!empty($product['missing_fields'])): ?>
-                                    <span style="color: #dc3232;">
-                                        <?php echo esc_html(implode(', ', $product['missing_fields'])); ?>
-                                    </span>
-                                <?php else: ?>
-                                    <span style="color: #46b450;">Всі поля присутні</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                            <h3 style="margin-top: 30px;">Детальний список товарів</h3>
+                            <table class="wp-list-table widefat fixed striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Назва товару</th>
+                                        <th>Статус</th>
+                                        <th>Відсутні поля</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($report['products'] as $product):
+                                        $status_color = $product['is_valid'] ? '#46b450' : '#dc3232';
+                                        $status_text = $product['is_valid'] ? '✅ Валідний' : '❌ Помилки';
+                                        ?>
+                                                <tr>
+                                                    <td><?php echo (int) $product['id']; ?></td>
+                                                    <td><?php echo esc_html($product['title']); ?></td>
+                                                    <td style="color: <?php echo esc_attr($status_color); ?>; font-weight: bold;">
+                                                        <?php echo $status_text; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php if (!empty($product['missing_fields'])): ?>
+                                                                    <span style="color: #dc3232;">
+                                                                        <?php echo esc_html(implode(', ', $product['missing_fields'])); ?>
+                                                                    </span>
+                                                        <?php else: ?>
+                                                                    <span style="color: #46b450;">Всі поля присутні</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
 
-            <p style="margin-top: 20px;">
-                <a href="<?php echo esc_url(admin_url('admin.php?page=d14k-merchant-feed')); ?>" class="button">←
-                    Повернутися до налаштувань</a>
-            </p>
-        </div>
-        <?php
+                            <p style="margin-top: 20px;">
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=d14k-merchant-feed')); ?>" class="button">←
+                                    Повернутися до налаштувань</a>
+                            </p>
+                        </div>
+                        <?php
     }
 
     /**
@@ -1663,303 +1657,303 @@ class D14K_Admin_Settings
 
         ob_start();
         ?>
-        <style>
-            .d14k-cat-toolbar {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin-bottom: 14px;
-                flex-wrap: wrap
-            }
+                        <style>
+                            .d14k-cat-toolbar {
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                margin-bottom: 14px;
+                                flex-wrap: wrap
+                            }
 
-            .d14k-cat-search {
-                flex: 1;
-                min-width: 180px;
-                height: 32px;
-                padding: 0 8px 0 10px;
-                border: 1px solid #8c8f94;
-                border-radius: 4px;
-                font-size: 13px
-            }
+                            .d14k-cat-search {
+                                flex: 1;
+                                min-width: 180px;
+                                height: 32px;
+                                padding: 0 8px 0 10px;
+                                border: 1px solid #8c8f94;
+                                border-radius: 4px;
+                                font-size: 13px
+                            }
 
-            .d14k-cat-search:focus {
-                outline: none;
-                border-color: #2271b1;
-                box-shadow: 0 0 0 1px #2271b1
-            }
+                            .d14k-cat-search:focus {
+                                outline: none;
+                                border-color: #2271b1;
+                                box-shadow: 0 0 0 1px #2271b1
+                            }
 
-            .d14k-cat-tbtn {
-                height: 32px;
-                padding: 0 10px;
-                border: 1px solid #8c8f94;
-                border-radius: 4px;
-                background: #fff;
-                font-size: 12px;
-                cursor: pointer;
-                color: #2271b1
-            }
+                            .d14k-cat-tbtn {
+                                height: 32px;
+                                padding: 0 10px;
+                                border: 1px solid #8c8f94;
+                                border-radius: 4px;
+                                background: #fff;
+                                font-size: 12px;
+                                cursor: pointer;
+                                color: #2271b1
+                            }
 
-            .d14k-cat-tbtn:hover {
-                background: #f6f7f7;
-                border-color: #2271b1
-            }
+                            .d14k-cat-tbtn:hover {
+                                background: #f6f7f7;
+                                border-color: #2271b1
+                            }
 
-            .d14k-cat-counter {
-                font-size: 12px;
-                color: #646970;
-                margin-left: auto;
-                white-space: nowrap
-            }
+                            .d14k-cat-counter {
+                                font-size: 12px;
+                                color: #646970;
+                                margin-left: auto;
+                                white-space: nowrap
+                            }
 
-            .d14k-cat-counter strong {
-                color: #d63638
-            }
+                            .d14k-cat-counter strong {
+                                color: #d63638
+                            }
 
-            .d14k-cg {
-                border: 1px solid #e0e0e0;
-                border-radius: 4px;
-                margin-bottom: 6px;
-                overflow: hidden
-            }
+                            .d14k-cg {
+                                border: 1px solid #e0e0e0;
+                                border-radius: 4px;
+                                margin-bottom: 6px;
+                                overflow: hidden
+                            }
 
-            .d14k-cg.d14k-has-ex {
-                border-color: #d63638;
-                border-left: 3px solid #d63638
-            }
+                            .d14k-cg.d14k-has-ex {
+                                border-color: #d63638;
+                                border-left: 3px solid #d63638
+                            }
 
-            .d14k-cg-hdr {
-                display: flex;
-                align-items: center;
-                gap: 9px;
-                padding: 8px 12px;
-                background: #f6f7f7;
-                cursor: pointer;
-                user-select: none
-            }
+                            .d14k-cg-hdr {
+                                display: flex;
+                                align-items: center;
+                                gap: 9px;
+                                padding: 8px 12px;
+                                background: #f6f7f7;
+                                cursor: pointer;
+                                user-select: none
+                            }
 
-            .d14k-cg-hdr:hover {
-                background: #eef0f2
-            }
+                            .d14k-cg-hdr:hover {
+                                background: #eef0f2
+                            }
 
-            .d14k-cg.d14k-has-ex .d14k-cg-hdr {
-                background: #fef7f7
-            }
+                            .d14k-cg.d14k-has-ex .d14k-cg-hdr {
+                                background: #fef7f7
+                            }
 
-            .d14k-cg-arr {
-                font-size: 10px;
-                color: #646970;
-                transition: transform .2s;
-                flex-shrink: 0
-            }
+                            .d14k-cg-arr {
+                                font-size: 10px;
+                                color: #646970;
+                                transition: transform .2s;
+                                flex-shrink: 0
+                            }
 
-            .d14k-cg.d14k-open .d14k-cg-arr {
-                transform: rotate(90deg)
-            }
+                            .d14k-cg.d14k-open .d14k-cg-arr {
+                                transform: rotate(90deg)
+                            }
 
-            .d14k-cg-lbl {
-                font-size: 13px;
-                font-weight: 600;
-                color: #1d2327;
-                flex: 1
-            }
+                            .d14k-cg-lbl {
+                                font-size: 13px;
+                                font-weight: 600;
+                                color: #1d2327;
+                                flex: 1
+                            }
 
-            .d14k-cg-meta {
-                display: flex;
-                align-items: center;
-                gap: 7px;
-                flex-shrink: 0
-            }
+                            .d14k-cg-meta {
+                                display: flex;
+                                align-items: center;
+                                gap: 7px;
+                                flex-shrink: 0
+                            }
 
-            .d14k-cg-total {
-                font-size: 11px;
-                color: #aaa
-            }
+                            .d14k-cg-total {
+                                font-size: 11px;
+                                color: #aaa
+                            }
 
-            .d14k-cg-badge {
-                display: none;
-                padding: 1px 7px;
-                border-radius: 10px;
-                font-size: 11px;
-                font-weight: 700;
-                background: #d63638;
-                color: #fff
-            }
+                            .d14k-cg-badge {
+                                display: none;
+                                padding: 1px 7px;
+                                border-radius: 10px;
+                                font-size: 11px;
+                                font-weight: 700;
+                                background: #d63638;
+                                color: #fff
+                            }
 
-            .d14k-cg-body {
-                display: none;
-                padding: 8px 12px 10px;
-                background: #fff;
-                border-top: 1px solid #e0e0e0
-            }
+                            .d14k-cg-body {
+                                display: none;
+                                padding: 8px 12px 10px;
+                                background: #fff;
+                                border-top: 1px solid #e0e0e0
+                            }
 
-            .d14k-cg.d14k-open .d14k-cg-body {
-                display: block
-            }
+                            .d14k-cg.d14k-open .d14k-cg-body {
+                                display: block
+                            }
 
-            .d14k-ch-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-                gap: 3px 16px
-            }
+                            .d14k-ch-grid {
+                                display: grid;
+                                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                                gap: 3px 16px
+                            }
 
-            .d14k-ch {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 4px 6px;
-                border-radius: 3px
-            }
+                            .d14k-ch {
+                                display: flex;
+                                align-items: center;
+                                gap: 6px;
+                                padding: 4px 6px;
+                                border-radius: 3px
+                            }
 
-            .d14k-ch:hover {
-                background: #f6f7f7
-            }
+                            .d14k-ch:hover {
+                                background: #f6f7f7
+                            }
 
-            .d14k-ch.d14k-ex {
-                background: #fef7f7
-            }
+                            .d14k-ch.d14k-ex {
+                                background: #fef7f7
+                            }
 
-            .d14k-ch-name {
-                font-size: 13px;
-                color: #1d2327;
-                cursor: pointer
-            }
+                            .d14k-ch-name {
+                                font-size: 13px;
+                                color: #1d2327;
+                                cursor: pointer
+                            }
 
-            .d14k-ch-cnt {
-                font-size: 11px;
-                color: #aaa;
-                flex-shrink: 0
-            }
+                            .d14k-ch-cnt {
+                                font-size: 11px;
+                                color: #aaa;
+                                flex-shrink: 0
+                            }
 
-            .d14k-cat-empty {
-                text-align: center;
-                padding: 24px;
-                color: #646970;
-                font-size: 13px;
-                display: none
-            }
-        </style>
-        <div class="d14k-cat-toolbar">
-            <input type="text" class="d14k-cat-search" id="d14kCatSearch" placeholder="Пошук категорії...">
-            <button type="button" class="d14k-cat-tbtn" onclick="d14kSelectAll()">Виділити всі</button>
-            <button type="button" class="d14k-cat-tbtn" onclick="d14kClearAll()">Зняти всі</button>
-            <span class="d14k-cat-counter">Виключено: <strong id="d14kExCount">0</strong></span>
-        </div>
-        <div id="d14kCatTree">
-            <?php
-            foreach ($top_level as $parent_id):
-                if (!isset($cat_by_id[$parent_id]))
-                    continue;
-                $parent = $cat_by_id[$parent_id];
-                // Check via wpml_trans_map: excluded if this term OR any translation is excluded
-                $_p_trans = isset($wpml_trans_map[(int) $parent_id]) ? $wpml_trans_map[(int) $parent_id] : array((int) $parent_id);
-                $p_chk = !empty(array_intersect($_p_trans, $excluded_ids));
-                $children = isset($children_map[$parent_id]) ? $children_map[$parent_id] : array();
-
-                // Count excluded children
-                $ex_kids = 0;
-                foreach ($children as $cid) {
-                    if (in_array((int) $cid, $excluded_ids, true))
-                        $ex_kids++;
-                }
-                $total_chk = ($p_chk ? 1 : 0) + $ex_kids;
-                $has_ex = $total_chk > 0;
-
-                // Build search string: parent + all child names
-                $s_data = mb_strtolower($parent->name);
-                foreach ($children as $cid) {
-                    if (isset($cat_by_id[$cid]))
-                        $s_data .= ' ' . mb_strtolower($cat_by_id[$cid]->name);
-                }
-                $g_cls = 'd14k-cg' . ($has_ex ? ' d14k-has-ex' : '') . ($has_ex ? ' d14k-open' : '');
-                ?>
-                <div class="<?php echo esc_attr($g_cls); ?>" data-search="<?php echo esc_attr($s_data); ?>">
-                    <div class="d14k-cg-hdr" onclick="d14kToggleGroup(this)">
-                        <span class="d14k-cg-arr">&#9658;</span>
-                        <input type="checkbox" class="d14k-cat-cb" name="excluded_categories[]"
-                            value="<?php echo (int) $parent_id; ?>" data-id="<?php echo (int) $parent_id; ?>"
-                            onclick="event.stopPropagation();d14kParentChanged(this)" <?php checked($p_chk); ?>>
-                        <span class="d14k-cg-lbl"><?php echo esc_html($parent->name); ?></span>
-                        <?php if (!empty($wpml_trans_map[(int) $parent_id]) && count($wpml_trans_map[(int) $parent_id]) > 1): ?>
-                            <span class="d14k-cg-lang" title="Синхронізується для всіх мов">🌐</span>
-                        <?php endif; ?>
-                        <span class="d14k-cg-meta">
-                            <?php if ($parent->count): ?>
-                                <span class="d14k-cg-total">(<?php echo (int) $parent->count; ?> товарів)</span>
-                            <?php endif; ?>
-                            <span class="d14k-cg-badge" id="d14kBadge<?php echo (int) $parent_id; ?>"
-                                style="<?php echo $has_ex ? 'display:inline-block' : 'display:none'; ?>">
-                                <?php echo $total_chk; ?>
-                            </span>
-                        </span>
-                    </div>
-                    <?php if (!empty($children)): ?>
-                        <div class="d14k-cg-body">
-                            <div class="d14k-ch-grid">
-                                <?php foreach ($children as $cid):
-                                    if (!isset($cat_by_id[$cid]))
-                                        continue;
-                                    $child = $cat_by_id[$cid];
-                                    $_c_trans = isset($wpml_trans_map[(int) $cid]) ? $wpml_trans_map[(int) $cid] : array((int) $cid);
-                                    $c_chk = !empty(array_intersect($_c_trans, $excluded_ids));
-                                    $c_cls = ($c_chk || $p_chk) ? ' d14k-ex' : '';
-                                    ?>
-                                    <div class="d14k-ch<?php echo $c_cls; ?>">
-                                        <input type="checkbox" class="d14k-cat-cb" name="excluded_categories[]"
-                                            value="<?php echo (int) $cid; ?>" data-id="<?php echo (int) $cid; ?>"
-                                            data-parent="<?php echo (int) $parent_id; ?>" onchange="d14kChildChanged(this)" <?php checked($c_chk); ?>>
-                                        <label class="d14k-ch-name" for=""><?php echo esc_html($child->name); ?></label>
-                                        <?php if ($child->count): ?>
-                                            <span class="d14k-ch-cnt">(<?php echo (int) $child->count; ?>)</span>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
+                            .d14k-cat-empty {
+                                text-align: center;
+                                padding: 24px;
+                                color: #646970;
+                                font-size: 13px;
+                                display: none
+                            }
+                        </style>
+                        <div class="d14k-cat-toolbar">
+                            <input type="text" class="d14k-cat-search" id="d14kCatSearch" placeholder="Пошук категорії...">
+                            <button type="button" class="d14k-cat-tbtn" onclick="d14kSelectAll()">Виділити всі</button>
+                            <button type="button" class="d14k-cat-tbtn" onclick="d14kClearAll()">Зняти всі</button>
+                            <span class="d14k-cat-counter">Виключено: <strong id="d14kExCount">0</strong></span>
                         </div>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-        </div>
-        <div class="d14k-cat-empty" id="d14kCatEmpty">Нічого не знайдено за вашим запитом</div>
-        <script>
-            function d14kToggleGroup(h) { h.closest('.d14k-cg').classList.toggle('d14k-open'); }
-            function d14kParentChanged(cb) {
-                var g = cb.closest('.d14k-cg'), kids = g.querySelectorAll('.d14k-cg-body .d14k-cat-cb');
-                kids.forEach(function (k) { k.checked = cb.checked; var c = k.closest('.d14k-ch'); if (c) c.classList.toggle('d14k-ex', cb.checked); });
-                d14kBadge(g); d14kCounter();
-            }
-            function d14kChildChanged(cb) {
-                var c = cb.closest('.d14k-ch'); if (c) c.classList.toggle('d14k-ex', cb.checked);
-                var g = cb.closest('.d14k-cg'); d14kSyncParent(g); d14kBadge(g); d14kCounter();
-            }
-            function d14kSyncParent(g) {
-                var kids = g.querySelectorAll('.d14k-cg-body .d14k-cat-cb'), pcb = g.querySelector('.d14k-cg-hdr .d14k-cat-cb'), chk = g.querySelectorAll('.d14k-cg-body .d14k-cat-cb:checked').length;
-                if (chk === 0) { pcb.checked = false; pcb.indeterminate = false; }
-                else if (chk === kids.length) { pcb.checked = true; pcb.indeterminate = false; }
-                else { pcb.checked = false; pcb.indeterminate = true; }
-            }
-            function d14kBadge(g) {
-                var pcb = g.querySelector('.d14k-cg-hdr .d14k-cat-cb'), bid = 'd14kBadge' + pcb.dataset.id, badge = document.getElementById(bid);
-                var cnt = g.querySelectorAll('.d14k-cat-cb:checked').length;
-                if (badge) { badge.textContent = cnt; badge.style.display = cnt > 0 ? 'inline-block' : 'none'; }
-                g.classList.toggle('d14k-has-ex', cnt > 0);
-                var hdr = g.querySelector('.d14k-cg-hdr'); hdr.style.background = cnt > 0 ? '#fef7f7' : '';
-            }
-            function d14kCounter() { var c = document.querySelectorAll('.d14k-cat-cb:checked').length; document.getElementById('d14kExCount').textContent = c; }
-            function d14kSelectAll() { document.querySelectorAll('.d14k-cat-cb').forEach(function (cb) { cb.checked = true; cb.indeterminate = false; var i = cb.closest('.d14k-ch'); if (i) i.classList.add('d14k-ex'); }); document.querySelectorAll('.d14k-cg').forEach(function (g) { d14kBadge(g); }); d14kCounter(); }
-            function d14kClearAll() { document.querySelectorAll('.d14k-cat-cb').forEach(function (cb) { cb.checked = false; cb.indeterminate = false; var i = cb.closest('.d14k-ch'); if (i) i.classList.remove('d14k-ex'); }); document.querySelectorAll('.d14k-cg').forEach(function (g) { d14kBadge(g); }); d14kCounter(); }
-            document.getElementById('d14kCatSearch').addEventListener('input', function () {
-                var q = this.value.trim().toLowerCase(), groups = document.querySelectorAll('.d14k-cg'), any = false;
-                groups.forEach(function (g) {
-                    if (!q) { g.style.display = ''; any = true; return; }
-                    var match = (g.dataset.search || '').indexOf(q) >= 0;
-                    g.style.display = match ? '' : 'none'; if (match) { any = true; g.classList.add('d14k-open'); }
-                });
-                document.getElementById('d14kCatEmpty').style.display = any ? 'none' : 'block';
-            });
-            (function () { d14kCounter(); })();
-        </script>
-        <?php
-        return ob_get_clean();
+                        <div id="d14kCatTree">
+                            <?php
+                            foreach ($top_level as $parent_id):
+                                if (!isset($cat_by_id[$parent_id]))
+                                    continue;
+                                $parent = $cat_by_id[$parent_id];
+                                // Check via wpml_trans_map: excluded if this term OR any translation is excluded
+                                $_p_trans = isset($wpml_trans_map[(int) $parent_id]) ? $wpml_trans_map[(int) $parent_id] : array((int) $parent_id);
+                                $p_chk = !empty(array_intersect($_p_trans, $excluded_ids));
+                                $children = isset($children_map[$parent_id]) ? $children_map[$parent_id] : array();
+
+                                // Count excluded children
+                                $ex_kids = 0;
+                                foreach ($children as $cid) {
+                                    if (in_array((int) $cid, $excluded_ids, true))
+                                        $ex_kids++;
+                                }
+                                $total_chk = ($p_chk ? 1 : 0) + $ex_kids;
+                                $has_ex = $total_chk > 0;
+
+                                // Build search string: parent + all child names
+                                $s_data = mb_strtolower($parent->name);
+                                foreach ($children as $cid) {
+                                    if (isset($cat_by_id[$cid]))
+                                        $s_data .= ' ' . mb_strtolower($cat_by_id[$cid]->name);
+                                }
+                                $g_cls = 'd14k-cg' . ($has_ex ? ' d14k-has-ex' : '') . ($has_ex ? ' d14k-open' : '');
+                                ?>
+                                        <div class="<?php echo esc_attr($g_cls); ?>" data-search="<?php echo esc_attr($s_data); ?>">
+                                            <div class="d14k-cg-hdr" onclick="d14kToggleGroup(this)">
+                                                <span class="d14k-cg-arr">&#9658;</span>
+                                                <input type="checkbox" class="d14k-cat-cb" name="excluded_categories[]"
+                                                    value="<?php echo (int) $parent_id; ?>" data-id="<?php echo (int) $parent_id; ?>"
+                                                    onclick="event.stopPropagation();d14kParentChanged(this)" <?php checked($p_chk); ?>>
+                                                <span class="d14k-cg-lbl"><?php echo esc_html($parent->name); ?></span>
+                                                <?php if (!empty($wpml_trans_map[(int) $parent_id]) && count($wpml_trans_map[(int) $parent_id]) > 1): ?>
+                                                            <span class="d14k-cg-lang" title="Синхронізується для всіх мов">🌐</span>
+                                                <?php endif; ?>
+                                                <span class="d14k-cg-meta">
+                                                    <?php if ($parent->count): ?>
+                                                                <span class="d14k-cg-total">(<?php echo (int) $parent->count; ?> товарів)</span>
+                                                    <?php endif; ?>
+                                                    <span class="d14k-cg-badge" id="d14kBadge<?php echo (int) $parent_id; ?>"
+                                                        style="<?php echo $has_ex ? 'display:inline-block' : 'display:none'; ?>">
+                                                        <?php echo $total_chk; ?>
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            <?php if (!empty($children)): ?>
+                                                        <div class="d14k-cg-body">
+                                                            <div class="d14k-ch-grid">
+                                                                <?php foreach ($children as $cid):
+                                                                    if (!isset($cat_by_id[$cid]))
+                                                                        continue;
+                                                                    $child = $cat_by_id[$cid];
+                                                                    $_c_trans = isset($wpml_trans_map[(int) $cid]) ? $wpml_trans_map[(int) $cid] : array((int) $cid);
+                                                                    $c_chk = !empty(array_intersect($_c_trans, $excluded_ids));
+                                                                    $c_cls = ($c_chk || $p_chk) ? ' d14k-ex' : '';
+                                                                    ?>
+                                                                            <div class="d14k-ch<?php echo $c_cls; ?>">
+                                                                                <input type="checkbox" class="d14k-cat-cb" name="excluded_categories[]"
+                                                                                    value="<?php echo (int) $cid; ?>" data-id="<?php echo (int) $cid; ?>"
+                                                                                    data-parent="<?php echo (int) $parent_id; ?>" onchange="d14kChildChanged(this)" <?php checked($c_chk); ?>>
+                                                                                <label class="d14k-ch-name" for=""><?php echo esc_html($child->name); ?></label>
+                                                                                <?php if ($child->count): ?>
+                                                                                            <span class="d14k-ch-cnt">(<?php echo (int) $child->count; ?>)</span>
+                                                                                <?php endif; ?>
+                                                                            </div>
+                                                                <?php endforeach; ?>
+                                                            </div>
+                                                        </div>
+                                            <?php endif; ?>
+                                        </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="d14k-cat-empty" id="d14kCatEmpty">Нічого не знайдено за вашим запитом</div>
+                        <script>
+                            function d14kToggleGroup(h) { h.closest('.d14k-cg').classList.toggle('d14k-open'); }
+                            function d14kParentChanged(cb) {
+                                var g = cb.closest('.d14k-cg'), kids = g.querySelectorAll('.d14k-cg-body .d14k-cat-cb');
+                                kids.forEach(function (k) { k.checked = cb.checked; var c = k.closest('.d14k-ch'); if (c) c.classList.toggle('d14k-ex', cb.checked); });
+                                d14kBadge(g); d14kCounter();
+                            }
+                            function d14kChildChanged(cb) {
+                                var c = cb.closest('.d14k-ch'); if (c) c.classList.toggle('d14k-ex', cb.checked);
+                                var g = cb.closest('.d14k-cg'); d14kSyncParent(g); d14kBadge(g); d14kCounter();
+                            }
+                            function d14kSyncParent(g) {
+                                var kids = g.querySelectorAll('.d14k-cg-body .d14k-cat-cb'), pcb = g.querySelector('.d14k-cg-hdr .d14k-cat-cb'), chk = g.querySelectorAll('.d14k-cg-body .d14k-cat-cb:checked').length;
+                                if (chk === 0) { pcb.checked = false; pcb.indeterminate = false; }
+                                else if (chk === kids.length) { pcb.checked = true; pcb.indeterminate = false; }
+                                else { pcb.checked = false; pcb.indeterminate = true; }
+                            }
+                            function d14kBadge(g) {
+                                var pcb = g.querySelector('.d14k-cg-hdr .d14k-cat-cb'), bid = 'd14kBadge' + pcb.dataset.id, badge = document.getElementById(bid);
+                                var cnt = g.querySelectorAll('.d14k-cat-cb:checked').length;
+                                if (badge) { badge.textContent = cnt; badge.style.display = cnt > 0 ? 'inline-block' : 'none'; }
+                                g.classList.toggle('d14k-has-ex', cnt > 0);
+                                var hdr = g.querySelector('.d14k-cg-hdr'); hdr.style.background = cnt > 0 ? '#fef7f7' : '';
+                            }
+                            function d14kCounter() { var c = document.querySelectorAll('.d14k-cat-cb:checked').length; document.getElementById('d14kExCount').textContent = c; }
+                            function d14kSelectAll() { document.querySelectorAll('.d14k-cat-cb').forEach(function (cb) { cb.checked = true; cb.indeterminate = false; var i = cb.closest('.d14k-ch'); if (i) i.classList.add('d14k-ex'); }); document.querySelectorAll('.d14k-cg').forEach(function (g) { d14kBadge(g); }); d14kCounter(); }
+                            function d14kClearAll() { document.querySelectorAll('.d14k-cat-cb').forEach(function (cb) { cb.checked = false; cb.indeterminate = false; var i = cb.closest('.d14k-ch'); if (i) i.classList.remove('d14k-ex'); }); document.querySelectorAll('.d14k-cg').forEach(function (g) { d14kBadge(g); }); d14kCounter(); }
+                            document.getElementById('d14kCatSearch').addEventListener('input', function () {
+                                var q = this.value.trim().toLowerCase(), groups = document.querySelectorAll('.d14k-cg'), any = false;
+                                groups.forEach(function (g) {
+                                    if (!q) { g.style.display = ''; any = true; return; }
+                                    var match = (g.dataset.search || '').indexOf(q) >= 0;
+                                    g.style.display = match ? '' : 'none'; if (match) { any = true; g.classList.add('d14k-open'); }
+                                });
+                                document.getElementById('d14kCatEmpty').style.display = any ? 'none' : 'block';
+                            });
+                            (function () { d14kCounter(); })();
+                        </script>
+                        <?php
+                        return ob_get_clean();
     }
 
     private function get_defaults()

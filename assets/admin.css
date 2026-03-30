@@ -318,6 +318,11 @@
     font-family: var(--d14k-font);
 }
 
+.d14k-wrap table.widefat td code,
+.d14k-wrap table.widefat td .button {
+    vertical-align: middle;
+}
+
 .d14k-wrap table.widefat tbody tr:last-child td {
     border-bottom: none;
 }

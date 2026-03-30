@@ -8,13 +8,15 @@ class D14K_Admin_Settings
 
     private $generator;
     private $yml_generator;
+    private $csv_generator;
     private $wpml;
     private $cron;
 
-    public function __construct($generator, $yml_generator, $wpml, $cron)
+    public function __construct($generator, $yml_generator, $csv_generator, $wpml, $cron)
     {
         $this->generator = $generator;
         $this->yml_generator = $yml_generator;
+        $this->csv_generator = $csv_generator;
         $this->wpml = $wpml;
         $this->cron = $cron;
 
@@ -24,6 +26,10 @@ class D14K_Admin_Settings
         add_action('admin_post_d14k_save_settings', array($this, 'save_settings'));
         add_action('admin_post_d14k_generate_now', array($this, 'handle_generate_now'));
         add_action('admin_post_d14k_test_validation', array($this, 'handle_test_validation'));
+
+        // AJAX handlers for channel toggles and per-channel generation
+        add_action('wp_ajax_d14k_toggle_channel', array($this, 'ajax_toggle_channel'));
+        add_action('wp_ajax_d14k_generate_channel', array($this, 'ajax_generate_channel'));
     }
 
     public function add_menu()
@@ -64,6 +70,10 @@ class D14K_Admin_Settings
         $js_ver = D14K_FEED_VERSION . '.' . filemtime(D14K_FEED_PATH . 'assets/admin.js');
         wp_enqueue_style('d14k-admin', D14K_FEED_URL . 'assets/admin.css', array(), $css_ver);
         wp_enqueue_script('d14k-admin', D14K_FEED_URL . 'assets/admin.js', array(), $js_ver, true);
+        wp_localize_script('d14k-admin', 'd14kFeed', array(
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('d14k_ajax_nonce'),
+        ));
     }
 
     public function render_page()
@@ -241,11 +251,13 @@ class D14K_Admin_Settings
                         <?php endif; ?>
                     </form>
 
-                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top: 10px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+                        style="margin-top: 10px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
                         <?php wp_nonce_field('d14k_test_validation'); ?>
                         <input type="hidden" name="action" value="d14k_test_validation">
                         <button type="submit" class="button">🔍 Тестова перевірка (10 товарів)</button>
-                        <span class="description" style="margin: 0;">Перевірте фід на наявність всіх обов'язкових полів перед відправкою до Google Merchant Center</span>
+                        <span class="description" style="margin: 0;">Перевірте фід на наявність всіх обов'язкових полів перед
+                            відправкою до Google Merchant Center</span>
                     </form>
 
                     <!-- Disclaimer Box was here, moved out -->
@@ -253,98 +265,303 @@ class D14K_Admin_Settings
 
                 <!-- Marketplace Feed Channels -->
                 <div class="d14k-card" style="margin-top:0;">
-                    <h2>🏪 Маркетплейси (YML фіди)</h2>
-                    <p>Увімкніть канали для генерації YML-фідів. Фіди генеруються автоматично разом з GMC-фідами за розкладом.</p>
-                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <?php wp_nonce_field('d14k_save_settings'); ?>
-                        <input type="hidden" name="action" value="d14k_save_settings">
-                        <input type="hidden" name="d14k_tab" value="feeds">
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            style="vertical-align:-2px;margin-right:4px;">
+                            <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                            <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+                            <path d="M2 7h20" />
+                            <path
+                                d="M22 7v3a2 2 0 0 1-2 2a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7" />
+                        </svg>
+                        Маркетплейси
                         <?php
-                        $yml_channels = isset($settings['yml_channels']) ? $settings['yml_channels'] : array();
-                        $channel_labels = array(
-                            'horoshop' => array('name' => 'Horoshop', 'desc' => 'YML імпорт для Horoshop (щоденне автооновлення)'),
-                            'prom' => array('name' => 'Prom.ua', 'desc' => 'YML фід для маркетплейсу Prom (on-the-fly по URL)'),
-                            'rozetka' => array('name' => 'Rozetka', 'desc' => 'YML фід для Rozetka (опитування щогодини)'),
-                        );
-                        ?>
-                        <table class="widefat striped">
-                            <thead>
-                                <tr>
-                                    <th style="width:50px;">Вкл.</th>
-                                    <th>Канал</th>
-                                    <th>URL фіди</th>
-                                    <th>Останнє оновлення</th>
-                                    <th>Товарів</th>
+                        $webp_enabled = !empty($settings['webp_to_jpg']);
+                        if ($webp_enabled): ?>
+                            <span class="d14k-badge d14k-badge--on">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                WebP → JPG
+                            </span>
+                        <?php else: ?>
+                            <span class="d14k-badge d14k-badge--off">WebP → JPG: вимкнено</span>
+                        <?php endif; ?>
+                    </h2>
+
+                    <?php
+                    $yml_channels = isset($settings['yml_channels']) ? $settings['yml_channels'] : array();
+                    $horoshop_enabled = !empty($yml_channels['horoshop']);
+                    ?>
+
+                    <!-- Horoshop Channel -->
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th style="width:60px;">Статус</th>
+                                <th>Канал</th>
+                                <th>Файл / URL</th>
+                                <th>Останнє оновлення</th>
+                                <th>Товарів</th>
+                                <th style="width:120px;">Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <label class="d14k-toggle">
+                                        <input type="checkbox" class="d14k-channel-toggle" data-channel="horoshop" <?php checked($horoshop_enabled); ?>>
+                                        <span class="d14k-toggle-slider"></span>
+                                    </label>
+                                </td>
+                                <td>
+                                    <strong>Horoshop</strong><br>
+                                    <small style="color:var(--d14k-muted);">CSV імпорт для Horoshop</small>
+                                </td>
+                                <td>
+                                    <?php if ($horoshop_enabled):
+                                        $horoshop_url = $this->csv_generator->get_feed_url('horoshop');
+                                        ?>
+                                        <a href="<?php echo esc_url($horoshop_url); ?>" class="button button-primary button-small"
+                                            download style="vertical-align:middle;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                <polyline points="7 10 12 15 17 10" />
+                                                <line x1="12" y1="15" x2="12" y2="3" />
+                                            </svg>
+                                            Завантажити CSV
+                                        </a>
+                                        <br>
+                                        <small class="d14k-url-toggle"
+                                            onclick="var el=document.getElementById('yml-url-horoshop');el.style.display=el.style.display==='none'?'block':'none';">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px;">
+                                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                            </svg>
+                                            URL для автоімпорту
+                                        </small>
+                                        <code id="yml-url-horoshop"
+                                            style="display:none;font-size:11px;margin-top:4px;word-break:break-all;"><?php echo esc_url($horoshop_url); ?></code>
+                                    <?php else: ?>
+                                        <span style="color:var(--d14k-text-muted);">Канал вимкнено</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($horoshop_enabled):
+                                        $ch_gen_time = $this->csv_generator->get_last_generated('horoshop');
+                                        echo esc_html($ch_gen_time ? $ch_gen_time : '—');
+                                    else: ?>
+                                        <span style="color:var(--d14k-text-muted);">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($horoshop_enabled):
+                                        $ch_stats = $this->csv_generator->get_last_stats('horoshop');
+                                        $ch_count = $ch_stats ? $ch_stats['valid'] : '—';
+                                        echo esc_html($ch_count);
+                                    else: ?>
+                                        <span style="color:var(--d14k-text-muted);">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <button type="button" class="button button-small d14k-generate-channel"
+                                        data-channel="horoshop" <?php disabled(!$horoshop_enabled); ?>>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px;">
+                                            <path
+                                                d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                                        </svg>
+                                        Згенерувати
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php if ($horoshop_enabled && !$webp_enabled):
+                                $settings_url = admin_url('admin.php?page=d14k-merchant-feed&tab=settings');
+                                ?>
+                                <tr class="d14k-channel-notice-row">
+                                    <td colspan="6" style="background:transparent;">
+                                        <div class="d14k-notice-inline d14k-notice-warning">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;">
+                                                <path
+                                                    d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                                <line x1="12" y1="9" x2="12" y2="13" />
+                                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                                            </svg>
+                                            Horoshop не підтримує WebP зображення. <a
+                                                href="<?php echo esc_url($settings_url); ?>">Увімкніть конвертацію WebP → JPG</a> у
+                                            налаштуваннях.
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($channel_labels as $ch_key => $ch_data):
-                                    $ch_enabled = !empty($yml_channels[$ch_key]);
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <input type="checkbox" name="yml_channels[<?php echo esc_attr($ch_key); ?>]" value="1" <?php checked($ch_enabled); ?>>
-                                        </td>
-                                        <td>
-                                            <strong><?php echo esc_html($ch_data['name']); ?></strong><br>
-                                            <small style="color:#666;"><?php echo esc_html($ch_data['desc']); ?></small>
-                                        </td>
-                                        <td>
-                                            <?php if ($ch_enabled):
-                                                $yml_url = $this->yml_generator->get_feed_url($ch_key);
-                                                $url_id = "yml-url-{$ch_key}";
-                                                ?>
-                                                <code id="<?php echo esc_attr($url_id); ?>"><?php echo esc_url($yml_url); ?></code>
-                                                <button type="button" class="button button-small d14k-copy"
-                                                    data-target="<?php echo esc_attr($url_id); ?>">Копіювати</button>
-                                                <br><small style="color:#666;">Білінгвальний фід (RU + UA)</small>
-                                            <?php else: ?>
-                                                <span style="color:#999;">Канал вимкнено</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if ($ch_enabled):
-                                                $yml_gen = $this->yml_generator->get_last_generated($ch_key);
-                                                echo esc_html($yml_gen ? $yml_gen : '—');
-                                            else: ?>
-                                                <span style="color:#999;">—</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if ($ch_enabled):
-                                                $yml_stats = $this->yml_generator->get_last_stats($ch_key);
-                                                $yml_count = $yml_stats ? $yml_stats['valid'] : '—';
-                                                echo esc_html($yml_count);
-                                            else: ?>
-                                                <span style="color:#999;">—</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                        <p class="submit" style="margin-top:10px;">
-                            <button type="submit" class="button button-primary">Зберегти канали</button>
-                        </p>
-                    </form>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+
+                    <!-- Horoshop Category Warning -->
+                    <?php if ($horoshop_enabled): ?>
+                        <div class="d14k-notice-box d14k-notice-box--warning" style="margin:12px 16px;">
+                            <div class="d14k-notice-box-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                            </div>
+                            <div class="d14k-notice-box-content">
+                                <strong>Категорії потрібно створити в Horoshop заздалегідь</strong>
+                                <p style="margin:4px 0 0;">Horoshop не створює категорії автоматично при імпорті CSV. Перед першим
+                                    імпортом створіть потрібні категорії та підкатегорії в адмінці Horoshop (<em>Товари →
+                                        Категорії</em>), а також призначте їм товарний шаблон. Назви повинні точно збігатися з тими,
+                                    що у CSV.</p>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Coming Soon: Prom & Rozetka -->
+                    <div class="d14k-coming-soon-section">
+                        <div class="d14k-coming-soon-header">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="opacity:.5;">
+                                <path d="M14.5 4h-5L7 7H2v13h20V7h-5l-2.5-3Z" />
+                                <circle cx="12" cy="14" r="4" />
+                            </svg>
+                            <span>Незабаром</span>
+                        </div>
+                        <div class="d14k-coming-soon-items">
+                            <div class="d14k-coming-soon-item">
+                                <span class="d14k-coming-soon-name">Prom.ua</span>
+                                <span class="d14k-badge d14k-badge--coming-soon">Тестування</span>
+                            </div>
+                            <div class="d14k-coming-soon-item">
+                                <span class="d14k-coming-soon-name">Rozetka</span>
+                                <span class="d14k-badge d14k-badge--coming-soon">За розкладом</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
+
+                <!-- System Status -->
+                <div class="d14k-card" style="margin-top:0;">
+                    <h2>⚙️ Статус системи</h2>
+                    <?php
+                    $mem_limit = wp_convert_hr_to_bytes(ini_get('memory_limit'));
+                    $mem_ok = $mem_limit >= 128 * 1024 * 1024; // 128MB min
+                    $mem_rec = $mem_limit >= 256 * 1024 * 1024; // 256MB recommended
+                    $gd_loaded = extension_loaded('gd');
+                    $gd_webp = $gd_loaded && function_exists('imagecreatefromwebp');
+                    $exec_time = (int) ini_get('max_execution_time');
+                    $exec_ok = $exec_time === 0 || $exec_time >= 120;
+                    $upload_dir = wp_upload_dir();
+                    $cache_dir = trailingslashit($upload_dir['basedir']) . 'd14k-feeds/images/';
+                    $dir_writable = wp_is_writable($upload_dir['basedir']);
+                    $php_ok = version_compare(PHP_VERSION, '7.4', '>=');
+                    ?>
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;"></th>
+                                <th>Параметр</th>
+                                <th>Значення</th>
+                                <th>Рекомендовано</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><?php echo $php_ok ? '🟢' : '🔴'; ?></td>
+                                <td><strong>PHP версія</strong></td>
+                                <td><?php echo esc_html(PHP_VERSION); ?></td>
+                                <td>≥ 7.4</td>
+                            </tr>
+                            <tr>
+                                <td><?php echo $mem_rec ? '🟢' : ($mem_ok ? '🟡' : '🔴'); ?></td>
+                                <td>
+                                    <strong>Пам'ять (memory_limit)</strong><br>
+                                    <small style="color:#666;">Потрібна для конвертації WebP → JPG</small>
+                                </td>
+                                <td><?php echo esc_html(ini_get('memory_limit')); ?></td>
+                                <td>≥ 256M (мін. 128M)</td>
+                            </tr>
+                            <tr>
+                                <td><?php echo $gd_loaded ? '🟢' : '🔴'; ?></td>
+                                <td><strong>PHP GD</strong></td>
+                                <td><?php echo $gd_loaded ? 'Увімкнено' : 'Вимкнено'; ?></td>
+                                <td>Обов'язково для конвертації</td>
+                            </tr>
+                            <tr>
+                                <td><?php echo $gd_webp ? '🟢' : '🔴'; ?></td>
+                                <td><strong>GD WebP підтримка</strong></td>
+                                <td><?php echo $gd_webp ? 'Увімкнено' : 'Вимкнено'; ?></td>
+                                <td>Обов'язково для WebP → JPG</td>
+                            </tr>
+                            <tr>
+                                <td><?php echo $exec_ok ? '🟢' : '🟡'; ?></td>
+                                <td>
+                                    <strong>Час виконання (max_execution_time)</strong><br>
+                                    <small style="color:#666;">Впливає на генерацію великих фідів</small>
+                                </td>
+                                <td><?php echo $exec_time === 0 ? 'Необмежено' : esc_html($exec_time) . 's'; ?></td>
+                                <td>≥ 120s або без обмежень</td>
+                            </tr>
+                            <tr>
+                                <td><?php echo $dir_writable ? '🟢' : '🔴'; ?></td>
+                                <td>
+                                    <strong>Запис в uploads</strong><br>
+                                    <small style="color:#666;">Для кешу зображень та XML файлів</small>
+                                </td>
+                                <td><?php echo $dir_writable ? 'Доступно' : 'Заблоковано'; ?></td>
+                                <td>Обов'язково</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <?php if (!$gd_webp && $webp_enabled): ?>
+                        <div class="d14k-notice-inline d14k-notice-warning" style="margin-top:12px;">
+                            ⚠️ Конвертація WebP → JPG увімкнена, але GD з підтримкою WebP відсутня. Зверніться до хостингу для
+                            встановлення <code>libwebp</code>.
+                        </div>
+                    <?php endif; ?>
+                    <?php if (!$mem_ok): ?>
+                        <div class="d14k-notice-inline d14k-notice-warning" style="margin-top:12px;">
+                            ⚠️ Пам'ять менше 128M — конвертація зображень може завершитися помилкою. Збільшіть
+                            <code>memory_limit</code> у <code>php.ini</code> або <code>wp-config.php</code>.
+                        </div>
+                    <?php endif; ?>
+                </div>
+
                 <!-- Disclaimer Box -->
                 <div class="d14k-disclaimer-box">
                     <div class="d14k-disclaimer-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                            <line x1="12" y1="9" x2="12" y2="13"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
                         </svg>
                     </div>
                     <div class="d14k-disclaimer-content">
                         <h4>Відмова від відповідальності</h4>
-                        <p>Автор не несе відповідальності за втрати, збитки чи інші наслідки використання плагіна. Ви використовуєте його на власний ризик. <strong>Рекомендується робити резервні копії!</strong></p>
+                        <p>Автор не несе відповідальності за втрати, збитки чи інші наслідки використання плагіна. Ви
+                            використовуєте його на власний ризик. <strong>Рекомендується робити резервні копії!</strong></p>
                         <h4>Корисні посилання</h4>
                         <ul>
-                            <li><a href="https://github.com/MILSPIL/d14k-merchant-feed" target="_blank" rel="noopener noreferrer">Сторінка плагіна на GitHub</a> — опис, поширені запитання та оновлення.</li>
-                            <li><a href="https://wordpress.org/plugins/wpvivid-backuprestore/" target="_blank" rel="noopener noreferrer">WPvivid Backup & Migration</a> — рекомендований плагін для створення резервних копій сайтів.</li>
+                            <li><a href="https://github.com/MILSPIL/d14k-merchant-feed" target="_blank"
+                                    rel="noopener noreferrer">Сторінка плагіна на GitHub</a> — опис, поширені запитання та
+                                оновлення.</li>
+                            <li><a href="https://wordpress.org/plugins/wpvivid-backuprestore/" target="_blank"
+                                    rel="noopener noreferrer">WPvivid Backup & Migration</a> — рекомендований плагін для
+                                створення резервних копій сайтів.</li>
                         </ul>
                     </div>
                 </div>
@@ -464,6 +681,20 @@ class D14K_Admin_Settings
                                                 class="regular-text" placeholder="Запасний бренд (якщо атрибут відсутній)">
                                         </div>
                                     </fieldset>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Зображення<br><small>(WebP → JPG)</small></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="webp_to_jpg" value="1" <?php checked(!empty($settings['webp_to_jpg'])); ?>>
+                                        <strong>Конвертувати WebP → JPG</strong> для маркетплейс-фідів
+                                    </label>
+                                    <p class="description">
+                                        Якщо зображення завантажені у WebP, плагін автоматично створить JPG-копії
+                                        для Horoshop, Prom.ua та Rozetka (ці платформи не підтримують WebP).
+                                        JPG-копії кешуються у <code>wp-content/uploads/d14k-feeds/images/</code>.
+                                    </p>
                                 </td>
                             </tr>
                             <tr>
@@ -795,98 +1026,103 @@ class D14K_Admin_Settings
                     <div class="d14k-help-content">
                         <div class="d14k-help-hero">
                             <h2>Довідка та налаштування</h2>
-                        <p>Як працює кожен розділ плагіну, та рекомендації для найкращих результатів генерації фідів для Google
-                            Merchant Center.</p>
-                    </div>
-                    <div class="d14k-help-grid">
-
-                        <div class="d14k-help-item">
-                            <div class="d14k-help-item-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="3" width="7" height="7" rx="1" />
-                                    <rect x="14" y="3" width="7" height="7" rx="1" />
-                                    <rect x="3" y="14" width="7" height="7" rx="1" />
-                                    <path d="M14 17h7M17.5 14v7" />
-                                </svg>
-                            </div>
-                            <h3>Фіди</h3>
-                            <p>Моніторинг стану XML-фідів: URL, дата останньої генерації, кількість товарів, помилки. Кнопка
-                                «Згенерувати зараз» запускає примусову генерацію поза розкладом.</p>
+                            <p>Як працює кожен розділ плагіну, та рекомендації для найкращих результатів генерації фідів для
+                                Google
+                                Merchant Center.</p>
                         </div>
+                        <div class="d14k-help-grid">
 
-                        <div class="d14k-help-item">
-                            <div class="d14k-help-item-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="3" />
-                                    <path
-                                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                                </svg>
+                            <div class="d14k-help-item">
+                                <div class="d14k-help-item-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7" rx="1" />
+                                        <rect x="14" y="3" width="7" height="7" rx="1" />
+                                        <rect x="3" y="14" width="7" height="7" rx="1" />
+                                        <path d="M14 17h7M17.5 14v7" />
+                                    </svg>
+                                </div>
+                                <h3>Фіди</h3>
+                                <p>Моніторинг стану XML-фідів: URL, дата останньої генерації, кількість товарів, помилки. Кнопка
+                                    «Згенерувати зараз» запускає примусову генерацію поза розкладом.</p>
                             </div>
-                            <h3>Налаштування</h3>
-                            <p>Глобальні параметри: увімкнення автогенерації, час генерації (раз на добу), назва
-                                бренду
-                                або атрибут товару, країна походження, Google Product Category за замовчуванням.</p>
-                        </div>
 
-                        <div class="d14k-help-item">
-                            <div class="d14k-help-item-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path
-                                        d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18" />
-                                </svg>
+                            <div class="d14k-help-item">
+                                <div class="d14k-help-item-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3" />
+                                        <path
+                                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                    </svg>
+                                </div>
+                                <h3>Налаштування</h3>
+                                <p>Глобальні параметри: увімкнення автогенерації, час генерації (раз на добу), назва
+                                    бренду
+                                    або атрибут товару, країна походження, Google Product Category за замовчуванням.</p>
                             </div>
-                            <h3>Маппінг</h3>
-                            <p>Прив'язка категорій WooCommerce до таксономії Google Product Categories. Custom Labels (0–4)
-                                дозволяють сегментувати товари в Google Ads (наприклад: season, margin, promo). Порожнє поле =
-                                використовується значення за замовчуванням.</p>
-                        </div>
 
-                        <div class="d14k-help-item">
-                            <div class="d14k-help-item-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                                </svg>
+                            <div class="d14k-help-item">
+                                <div class="d14k-help-item-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path
+                                            d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18" />
+                                    </svg>
+                                </div>
+                                <h3>Маппінг</h3>
+                                <p>Прив'язка категорій WooCommerce до таксономії Google Product Categories. Custom Labels (0–4)
+                                    дозволяють сегментувати товари в Google Ads (наприклад: season, margin, promo). Порожнє поле
+                                    =
+                                    використовується значення за замовчуванням.</p>
                             </div>
-                            <h3>Фільтри</h3>
-                            <p>Виключення категорій з фіду: позначені категорії та їх підкатегорії не потраплять у XML. Фільтри
-                                по атрибутах (напр., виключити товари без ціни або певного кольору). Правила по
-                                статусу/наявності.</p>
-                        </div>
 
-                        <div class="d14k-help-item">
-                            <div class="d14k-help-item-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                    <polyline points="14 2 14 8 20 8" />
-                                    <line x1="16" y1="13" x2="8" y2="13" />
-                                    <line x1="16" y1="17" x2="8" y2="17" />
-                                    <polyline points="10 9 9 9 8 9" />
-                                </svg>
+                            <div class="d14k-help-item">
+                                <div class="d14k-help-item-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                                    </svg>
+                                </div>
+                                <h3>Фільтри</h3>
+                                <p>Виключення категорій з фіду: позначені категорії та їх підкатегорії не потраплять у XML.
+                                    Фільтри
+                                    по атрибутах (напр., виключити товари без ціни або певного кольору). Правила по
+                                    статусу/наявності.</p>
                             </div>
-                            <h3>Custom Labels на рівні товару</h3>
-                            <p>У картці кожного товару WooCommerce є мета-поля Custom Label 0–4. Вони перезаписують значення
-                                маппінгу по категорії. Корисно для товарів-виключень або seasonal акцій.</p>
-                        </div>
 
-                        <div class="d14k-help-item">
-                            <div class="d14k-help-item-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <polyline points="12 6 12 12 16 14" />
-                                </svg>
+                            <div class="d14k-help-item">
+                                <div class="d14k-help-item-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        <polyline points="14 2 14 8 20 8" />
+                                        <line x1="16" y1="13" x2="8" y2="13" />
+                                        <line x1="16" y1="17" x2="8" y2="17" />
+                                        <polyline points="10 9 9 9 8 9" />
+                                    </svg>
+                                </div>
+                                <h3>Custom Labels на рівні товару</h3>
+                                <p>У картці кожного товару WooCommerce є мета-поля Custom Label 0–4. Вони перезаписують значення
+                                    маппінгу по категорії. Корисно для товарів-виключень або seasonal акцій.</p>
                             </div>
-                            <h3>Автоматична генерація</h3>
-                            <p>Плагін використовує WordPress Cron для автогенерації. Фіди генеруються раз на добу; час можна
-                                налаштувати під сканування Google Merchant Center (так само як і часовий пояс). Для
-                                продакшн-сайтів рекомендується замінити WP Cron на системний cron (crontab) для надійності.</p>
-                        </div>
 
-                    </div><!-- /.d14k-help-grid -->
+                            <div class="d14k-help-item">
+                                <div class="d14k-help-item-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polyline points="12 6 12 12 16 14" />
+                                    </svg>
+                                </div>
+                                <h3>Автоматична генерація</h3>
+                                <p>Плагін використовує WordPress Cron для автогенерації. Фіди генеруються раз на добу; час можна
+                                    налаштувати під сканування Google Merchant Center (так само як і часовий пояс). Для
+                                    продакшн-сайтів рекомендується замінити WP Cron на системний cron (crontab) для надійності.
+                                </p>
+                            </div>
+
+                        </div><!-- /.d14k-help-grid -->
                     </div><!-- /.d14k-help-content -->
 
                     <div class="d14k-contact-banner">
                         <div class="d14k-contact-banner-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
                                 <circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none"></circle>
@@ -910,7 +1146,7 @@ class D14K_Admin_Settings
         </div>
 
         <script>
-            document.querySelectorAll('.d14k-copy').forEach(function (btn) {
+            document.querySelectorAll('.d14k-copy').forE        ach(function (b              tn) {
                 btn.addEventListener('click', function () {
                     var el = document.getElementById(this.dataset.target);
                     navigator.clipboard.writeText(el.textContent).then(function () {
@@ -1135,6 +1371,7 @@ class D14K_Admin_Settings
             'brand_attribute' => sanitize_key(isset($_POST['brand_attribute']) ? $_POST['brand_attribute'] : ''),
             'brand_fallback' => sanitize_text_field(isset($_POST['brand_fallback']) ? $_POST['brand_fallback'] : ''),
             'country_of_origin' => sanitize_text_field(isset($_POST['country_of_origin']) ? $_POST['country_of_origin'] : 'UA'),
+            'webp_to_jpg' => !empty($_POST['webp_to_jpg']),
             'default_google_category' => sanitize_text_field(isset($_POST['default_google_category']) ? $_POST['default_google_category'] : ''),
             'category_map' => array_map('sanitize_text_field', isset($_POST['category_map']) ? $_POST['category_map'] : array()),
             'excluded_categories' => $excluded_cats,
@@ -1196,6 +1433,90 @@ class D14K_Admin_Settings
         $notice = $success ? 'generated' : 'error';
         wp_redirect(admin_url("admin.php?page=d14k-merchant-feed&d14k_notice={$notice}"));
         exit;
+    }
+
+    /**
+     * AJAX: Toggle YML channel on/off
+     */
+    public function ajax_toggle_channel()
+    {
+        check_ajax_referer('d14k_ajax_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error('Access denied', 403);
+        }
+
+        $channel = isset($_POST['channel']) ? sanitize_key($_POST['channel']) : '';
+        $enabled = isset($_POST['enabled']) ? (bool) $_POST['enabled'] : false;
+
+        $valid_channels = array('horoshop', 'prom', 'rozetka');
+        if (!in_array($channel, $valid_channels, true)) {
+            wp_send_json_error('Invalid channel', 400);
+        }
+
+        $settings = get_option('d14k_feed_settings', array());
+        if (!isset($settings['yml_channels'])) {
+            $settings['yml_channels'] = array();
+        }
+
+        if ($enabled) {
+            $settings['yml_channels'][$channel] = 1;
+        } else {
+            unset($settings['yml_channels'][$channel]);
+        }
+
+        update_option('d14k_feed_settings', $settings);
+
+        wp_send_json_success(array(
+            'channel' => $channel,
+            'enabled' => $enabled,
+            'message' => $enabled ? 'Канал увімкнено' : 'Канал вимкнено',
+        ));
+    }
+
+    /**
+     * AJAX: Generate feed for a specific YML channel
+     */
+    public function ajax_generate_channel()
+    {
+        check_ajax_referer('d14k_ajax_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error('Access denied', 403);
+        }
+
+        $channel = isset($_POST['channel']) ? sanitize_key($_POST['channel']) : '';
+
+        $valid_channels = array('horoshop', 'prom', 'rozetka');
+        if (!in_array($channel, $valid_channels, true)) {
+            wp_send_json_error('Invalid channel', 400);
+        }
+
+        $settings = get_option('d14k_feed_settings', array());
+        if (empty($settings['yml_channels'][$channel])) {
+            wp_send_json_error('Channel is not enabled', 400);
+        }
+
+        if ($channel === 'horoshop') {
+            $result = $this->csv_generator->generate($channel);
+            $generator_instance = $this->csv_generator;
+        } else {
+            $result = $this->yml_generator->generate($channel);
+            $generator_instance = $this->yml_generator;
+        }
+
+        if ($result) {
+            $stats = $generator_instance->get_last_stats($channel);
+            $last_gen = $generator_instance->get_last_generated($channel);
+            wp_send_json_success(array(
+                'channel' => $channel,
+                'stats' => $stats,
+                'generated' => $last_gen,
+                'message' => 'Фід згенеровано!',
+            ));
+        } else {
+            wp_send_json_error('Generation failed. Check error logs.', 500);
+        }
     }
 
     public function handle_test_validation()
@@ -1651,6 +1972,7 @@ class D14K_Admin_Settings
             'brand_attribute' => '',
             'brand_fallback' => '',
             'country_of_origin' => '',
+            'webp_to_jpg' => false,
             'default_google_category' => '',
             'category_map' => array(),
             'excluded_categories' => array(),

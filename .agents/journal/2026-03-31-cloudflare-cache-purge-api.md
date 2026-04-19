@@ -8,14 +8,14 @@
 1. **Створено Custom API Token** в Cloudflare Dashboard:
    - Назва: `Deploy Cache Purge`
    - Права: Zone → Cache Purge → Purge (All zones)
-   - Токен: `cfut_Y5TA1FmNjSOOCBDRRf0eMbval72vo5JH9lcz1XD456e3a436`
+   - Токен збережено в macOS Keychain: `codex/gmc-feed/filler-cloudflare-token`
 
 2. **Отримано Zone ID** для filler.com.ua: `44d2bc486baf0d5a3789482d80b5a963`
 
 3. **Протестовано API** — purge_cache працює (`"success": true`)
 
 4. **Оновлено `.agents/config.md`**:
-   - Додано секцію Cloudflare з токеном і Zone ID
+   - Додано секцію Cloudflare з посиланням на Keychain item і Zone ID
    - Додано повні деплой-команди для filler.com.ua (rsync + wp cache flush + CF purge)
 
 ## Деплой filler.com.ua тепер включає

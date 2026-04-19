@@ -16,7 +16,7 @@ class D14K_Product_Meta
 
     public function add_custom_label_field()
     {
-        global $woocommerce, $post;
+        global $post;
 
         echo '<div class="options_group">';
 

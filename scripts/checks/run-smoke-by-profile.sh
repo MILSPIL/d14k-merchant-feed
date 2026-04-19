@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${ROOT_DIR}/scripts/env/load-profile.sh"
+
+ENV_PROFILE="${D14K_ENV_PROFILE:-${1:-}}"
+
+if [[ -z "${ENV_PROFILE}" ]]; then
+  echo "Usage: D14K_ENV_PROFILE=<profile> $0" >&2
+  exit 4
+fi
+
+load_d14k_env_profile "${ROOT_DIR}" "${ENV_PROFILE}"
+
+PROFILE_LABEL="${D14K_PROFILE_LABEL:-${ENV_PROFILE}}"
+PLUGIN_SLUG="${D14K_PLUGIN_SLUG:-gmc-feed-for-woocommerce}"
+SMOKE_KIND="${D14K_SMOKE_KIND:-supplier}"
+REMOTE_SSH_ALIAS="${D14K_REMOTE_SSH_ALIAS:?D14K_REMOTE_SSH_ALIAS is required}"
+REMOTE_WP_PATH="${D14K_REMOTE_WP_PATH:?D14K_REMOTE_WP_PATH is required}"
+REMOTE_SITE_URL="${D14K_REMOTE_SITE_URL:-}"
+REMOTE_FEED_URL="${D14K_REMOTE_FEED_URL:-}"
+REMOTE_MAX_ITEMS="${D14K_REMOTE_MAX_ITEMS:-1}"
+REMOTE_WP_CLI_ARGS="${D14K_WP_CLI_ARGS:-}"
+RUN_HTTP_CHECKS="${RUN_HTTP_CHECKS:-${D14K_RUN_HTTP_CHECKS_DEFAULT:-0}}"
+
+case "${SMOKE_KIND}" in
+  supplier)
+    SMOKE_TITLE="${SMOKE_TITLE:-${PROFILE_LABEL} smoke}" \
+    REMOTE_SSH_ALIAS="${REMOTE_SSH_ALIAS}" \
+    REMOTE_WP_PATH="${REMOTE_WP_PATH}" \
+    REMOTE_SITE_URL="${REMOTE_SITE_URL}" \
+    REMOTE_FEED_URL="${REMOTE_FEED_URL}" \
+    REMOTE_MAX_ITEMS="${REMOTE_MAX_ITEMS}" \
+    REMOTE_PLUGIN_SLUG="${PLUGIN_SLUG}" \
+    REMOTE_WP_CLI_ARGS="${REMOTE_WP_CLI_ARGS}" \
+    RUN_HTTP_CHECKS="${RUN_HTTP_CHECKS}" \
+    RUN_BACKGROUND="${RUN_BACKGROUND:-${D14K_RUN_BACKGROUND_DEFAULT:-0}}" \
+    FAIL_ON_BUSY_BACKGROUND="${FAIL_ON_BUSY_BACKGROUND:-0}" \
+    "${ROOT_DIR}/scripts/checks/run-remote-smoke.sh"
+    ;;
+  marketplace_feed)
+    SMOKE_TITLE="${SMOKE_TITLE:-${PROFILE_LABEL} marketplace smoke}" \
+    REMOTE_SSH_ALIAS="${REMOTE_SSH_ALIAS}" \
+    REMOTE_WP_PATH="${REMOTE_WP_PATH}" \
+    REMOTE_SITE_URL="${REMOTE_SITE_URL}" \
+    REMOTE_PLUGIN_SLUG="${PLUGIN_SLUG}" \
+    REMOTE_WP_CLI_ARGS="${REMOTE_WP_CLI_ARGS}" \
+    MARKETPLACE_FEED_URL="${D14K_MARKETPLACE_FEED_URL:-${REMOTE_FEED_URL}}" \
+    MARKETPLACE_FEED_FORMAT="${D14K_MARKETPLACE_FEED_FORMAT:-yml}" \
+    RUN_HTTP_CHECKS="${RUN_HTTP_CHECKS}" \
+    "${ROOT_DIR}/scripts/checks/run-marketplace-feed-smoke.sh"
+    ;;
+  gmc_prom)
+    SMOKE_TITLE="${SMOKE_TITLE:-${PROFILE_LABEL} GMC + Prom smoke}" \
+    REMOTE_SSH_ALIAS="${REMOTE_SSH_ALIAS}" \
+    REMOTE_WP_PATH="${REMOTE_WP_PATH}" \
+    REMOTE_SITE_URL="${REMOTE_SITE_URL}" \
+    REMOTE_PLUGIN_SLUG="${PLUGIN_SLUG}" \
+    REMOTE_WP_CLI_ARGS="${REMOTE_WP_CLI_ARGS}" \
+    RUN_HTTP_CHECKS="${RUN_HTTP_CHECKS}" \
+    GMC_LANGS="${D14K_GMC_LANGS:-uk ru}" \
+    PROM_FEED_URL="${D14K_PROM_FEED_URL:-${REMOTE_SITE_URL%/}/marketplace-feed/prom/}" \
+    PROM_CHECK_MODE="${D14K_PROM_CHECK_MODE:-optional}" \
+    "${ROOT_DIR}/scripts/checks/run-gmc-prom-smoke.sh"
+    ;;
+  *)
+    echo "Unknown smoke kind: ${SMOKE_KIND}" >&2
+    exit 5
+    ;;
+esac

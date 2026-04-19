@@ -23,3 +23,10 @@ debug.log
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# Local artifacts
+*.xlsx
+test-feed.csv
+horoshop-categories-import.csv
+проблеми_з_товарами_*.csv
+releases/strum-backups/

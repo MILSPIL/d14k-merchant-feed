@@ -27,8 +27,11 @@ class D14K_YML_Generator
     /** @var array */
     private $stats = array();
 
+    /** @var array Plugin settings (loaded at generation time) */
+    private $settings = array();
+
     /** @var array Supported marketplace channels */
-    const CHANNELS = array('horoshop', 'prom', 'rozetka');
+    const CHANNELS = array('prom', 'rozetka');
 
     public function __construct($wpml, $validator)
     {
@@ -45,7 +48,7 @@ class D14K_YML_Generator
      * via name_ua / description_ua tags. Products are loaded in the
      * default language (RU), and UA translations are fetched via WPML.
      *
-     * @param string $channel Channel name (horoshop, prom, rozetka)
+     * @param string $channel Channel name (prom, rozetka)
      * @return bool Success
      */
     public function generate($channel)
@@ -95,6 +98,7 @@ class D14K_YML_Generator
     private function build_yml($channel)
     {
         $settings = get_option('d14k_feed_settings', array());
+        $this->settings = $settings;
         $excluded_categories = isset($settings['excluded_categories']) ? array_map('intval', $settings['excluded_categories']) : array();
         if (!empty($excluded_categories) && method_exists($this, 'expand_excluded_with_translations')) {
             $excluded_categories = $this->expand_excluded_with_translations($excluded_categories);
@@ -125,13 +129,20 @@ class D14K_YML_Generator
         // Build offers
         $xml .= "  <offers>\n";
 
-        $products = wc_get_products(array(
+        set_time_limit(0);
+
+        $product_ids = wc_get_products(array(
             'limit' => -1,
             'status' => 'publish',
-            'return' => 'objects',
+            'return' => 'ids',
         ));
 
-        foreach ($products as $product) {
+        foreach ($product_ids as $pid) {
+            $product = wc_get_product($pid);
+            if (!$product) {
+                continue;
+            }
+
             $product_id = $product->get_id();
 
             if ($product->is_type('simple')) {
@@ -253,14 +264,14 @@ class D14K_YML_Generator
         $url = $product->get_permalink();
 
         // Image
-        $image_url = $image_id ? wp_get_attachment_url($image_id) : '';
+        $image_url = $image_id ? $this->maybe_convert_webp_url(wp_get_attachment_url($image_id)) : '';
 
         // Gallery images
         $max_photos = ($channel === 'rozetka') ? 15 : 10;
         $additional_images = array();
         foreach (array_slice($gallery_ids, 0, $max_photos) as $gid) {
             if ($gid != $image_id) {
-                $img_url = wp_get_attachment_url($gid);
+                $img_url = $this->maybe_convert_webp_url(wp_get_attachment_url($gid));
                 if ($img_url) {
                     $additional_images[] = $img_url;
                 }
@@ -286,11 +297,12 @@ class D14K_YML_Generator
         $category_id = $this->get_primary_category_id($parent);
 
         // Attributes / params
-        $params = $this->get_product_params($product, $parent);
+        $params = $this->get_product_params($product, $parent, $settings);
 
         // --- Build the <offer> XML ---
 
-        $offer_attrs = 'id="' . $id . '" available="' . $available . '"';
+        $offer_id = $id;
+        $offer_attrs = 'id="' . $offer_id . '" available="' . $available . '"';
 
         // Prom-specific: selling_type & group_id
         if ($channel === 'prom') {
@@ -318,7 +330,8 @@ class D14K_YML_Generator
         $xml .= "      <currencyId>UAH</currencyId>\n";
         $xml .= '      <categoryId>' . intval($category_id) . "</categoryId>\n";
 
-        // Pictures
+        // Pictures — all channels: standard YML <picture> tags
+        // First <picture> = main photo, rest = gallery
         if ($image_url) {
             $xml .= '      <picture>' . $this->esc($image_url) . "</picture>\n";
         }
@@ -336,6 +349,7 @@ class D14K_YML_Generator
             if ($channel === 'rozetka') {
                 $xml .= '      <article>' . $this->esc($sku) . "</article>\n";
             } else {
+                // Prom uses vendorCode
                 $xml .= '      <vendorCode>' . $this->esc($sku) . "</vendorCode>\n";
             }
         }
@@ -343,7 +357,7 @@ class D14K_YML_Generator
         // Name (base language — RU)
         $xml .= '      <name>' . $this->esc($title) . "</name>\n";
 
-        // Name UA — always include Ukrainian translation
+        // Name UA — Ukrainian translation
         $ua_title = $this->get_translated_value($parent, $product, 'title', 'uk');
         if ($ua_title && $ua_title !== $title) {
             $xml .= '      <name_ua>' . $this->esc($ua_title) . "</name_ua>\n";
@@ -352,7 +366,7 @@ class D14K_YML_Generator
         // Description (base language — RU)
         $xml .= '      <description>' . $this->cdata($description_output) . "</description>\n";
 
-        // Description UA — always include Ukrainian translation
+        // Description UA — Ukrainian translation
         $ua_desc = $this->get_translated_value($parent, $product, 'description', 'uk');
         if ($ua_desc) {
             if ($channel === 'rozetka') {
@@ -377,8 +391,8 @@ class D14K_YML_Generator
             $xml .= '      <country>' . $this->esc($this->get_country_name($country)) . "</country>\n";
         }
 
-        // Delivery (Horoshop, Prom)
-        if ($channel !== 'rozetka') {
+        // Delivery — тільки для Prom (Horoshop не підтримує цей тег)
+        if ($channel === 'prom') {
             $xml .= "      <delivery>true</delivery>\n";
         }
 
@@ -469,10 +483,12 @@ class D14K_YML_Generator
      *
      * @return array Array of ['name' => ..., 'value' => ..., 'unit' => ...]
      */
-    private function get_product_params($product, $parent)
+    private function get_product_params($product, $parent, $settings = array())
     {
         $params = array();
         $attributes = $parent->get_attributes();
+
+        $brand_attr = isset($settings['brand_attribute']) ? $settings['brand_attribute'] : '';
 
         foreach ($attributes as $attr_key => $attribute) {
             $name = '';
@@ -481,6 +497,11 @@ class D14K_YML_Generator
             if ($attribute instanceof WC_Product_Attribute) {
                 if ($attribute->is_taxonomy()) {
                     $taxonomy = $attribute->get_taxonomy();
+
+                    if ($brand_attr !== '' && $taxonomy === $brand_attr) {
+                        continue;
+                    }
+
                     $tax_obj = get_taxonomy($taxonomy);
                     $name = $tax_obj ? $tax_obj->labels->singular_name : wc_attribute_label($taxonomy);
 
@@ -499,6 +520,11 @@ class D14K_YML_Generator
                 } else {
                     // Custom (non-taxonomy) attribute
                     $name = $attribute->get_name();
+
+                    if ($brand_attr !== '' && $name === $brand_attr) {
+                        continue;
+                    }
+
                     $val = $product->get_attribute($attr_key);
                     if (!empty($val)) {
                         $values = array($val);
@@ -569,6 +595,8 @@ class D14K_YML_Generator
 
         if ($field === 'title') {
             return $translated_product->get_name();
+        } elseif ($field === 'short_description') {
+            return $translated_product->get_short_description();
         } elseif ($field === 'description') {
             $desc = $translated_product->get_description();
             if (empty(trim($desc))) {
@@ -656,26 +684,57 @@ class D14K_YML_Generator
     // --- Filtering methods (delegated from D14K_Feed_Generator) ---
 
     /**
+     * Keep the original image URL for YML feeds.
+     *
+     * WebP to JPG conversion is reserved for the dedicated Horoshop CSV flow.
+     *
+     * @param string $url Image URL
+     * @return string
+     */
+    private function maybe_convert_webp_url($url)
+    {
+        return $url;
+    }
+
+    /**
+     * Parse PHP memory_limit into bytes.
+     *
+     * @return int Memory limit in bytes, 0 if unlimited (-1)
+     */
+    private function get_memory_limit_bytes()
+    {
+        $limit = ini_get('memory_limit');
+        if ($limit === '-1') {
+            return 0;
+        }
+        $value = (int) $limit;
+        $unit = strtolower(substr(trim($limit), -1));
+        switch ($unit) {
+            case 'g':
+                $value *= 1024;
+            // fallthrough
+            case 'm':
+                $value *= 1024;
+            // fallthrough
+            case 'k':
+                $value *= 1024;
+        }
+        return $value;
+    }
+
+    /**
      * Resolve brand using same logic as GMC generator.
      */
     private function resolve_brand($product, $parent, $settings)
     {
-        $mode = isset($settings['brand_mode']) ? $settings['brand_mode'] : 'custom';
         $custom_brand = isset($settings['brand']) && $settings['brand'] !== ''
             ? $settings['brand']
             : get_bloginfo('name');
 
-        if ($mode !== 'attribute') {
-            return $custom_brand;
-        }
-
         $attr_tax = isset($settings['brand_attribute']) ? $settings['brand_attribute'] : '';
-        $fallback = isset($settings['brand_fallback']) && $settings['brand_fallback'] !== ''
-            ? $settings['brand_fallback']
-            : $custom_brand;
 
         if (empty($attr_tax)) {
-            return $fallback;
+            return $custom_brand;
         }
 
         $terms = get_the_terms($parent->get_id(), $attr_tax);
@@ -685,11 +744,11 @@ class D14K_YML_Generator
                 return html_entity_decode($t->name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
             }, $terms);
             $brand_val = trim(implode(', ', $names));
-            return $brand_val !== '' ? $brand_val : $fallback;
+            return $brand_val !== '' ? $brand_val : $custom_brand;
         }
 
         $brand_val = trim((string) $parent->get_attribute($attr_tax));
-        return $brand_val !== '' ? $brand_val : $fallback;
+        return $brand_val !== '' ? $brand_val : $custom_brand;
     }
 
     private function is_in_excluded_categories($product_id, $excluded_categories)

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<yml_catalog date="2026-03-30 19:53">
+<shop>
+  <name>FILLER.COM.UA</name>
+  <company>FILLER.COM.UA</company>
+  <url>https://filler.com.ua</url>
+  <currencies>
+    <currency id="UAH" rate="1"/>
+  </currencies>
+<categories>
+    <category id="606" parentId="182">Липолитик Pine Bottle</category>
+    <category id="612" parentId="258">Полинуклеотиды Vitaran</category>
+    <category id="620" parentId="258">Мезококтейлі DEMEI</category>
+    <category id="630" parentId="588">Полимолочная кислота Olidia</category>
+    <category id="632" parentId="588">Полимолочные кислоты JUVELOOK</category>
+    <category id="588">Полимолочная кислота</category>
+    <category id="590" parentId="186">Sedy Fill</category>
+    <category id="594" parentId="176">Биоревитализанты Richesse</category>
+    <category id="596" parentId="182">Липополитики CS Lab</category>
+    <category id="601" parentId="182">Липополиты Kabelline</category>
+    <category id="166" parentId="165">Иглы инъекционные Alexpharm</category>
+    <category id="494" parentId="167">Крем с лидокаином Koru Pharma (Кору Фарма) - обезболивающий крем для депиляции и т��ту</category>
+    <category id="425" parentId="170">Ботулотоксины WonderTox</category>
+    <category id="500" parentId="259">Пилинги WiQo</category>
+    <category id="365" parentId="366">Уходовая косметика Renew</category>
+    <category id="366">Уходовая косметика</category>
+    <category id="514" parentId="182">Липолитик Dr.Lipo+ (Доктор Липо)</category>
+    <category id="436" parentId="186">Филлеры для лица Belotero</category>
+    <category id="519" parentId="176">Биоревитализант AMI Eyes (Ами Айс)</category>
+    <category id="443" parentId="180">Гиалуронидаза PB Serum</category>
+    <category id="454" parentId="258">Мезококтейли DR. CYJ</category>
+    <category id="181" parentId="180">Гиалуронидаза Liporase (Липорейз) - коррекция и выведение филлеров</category>
+    <category id="423" parentId="170">Ботулотоксин Liztox (Лизтокс) - коррекция морщин и гипергидроза</category>
+    <category id="273" parentId="259">Пилинги BioRePeel</category>
+    <category id="186">Филлеры</category>
+    <category id="429" parentId="186">Филлеры для лица Saypha</category>
+    <category id="509" parentId="167">Анестетики Richesse Caine</category>
+    <category id="440" parentId="182">Липолитик PB Serum (ПБ Серум) - Триада ферментов</category>
+    <category id="522" parentId="176">Биоревитализант Celosome (Целосом)</category>
+    <category id="371" parentId="365">Косметика Renew Golden Age (Ренью) - антивозрастной уход и лифтинг</category>
+    <category id="459" parentId="258">Мезококтейли RRS</category>
+    <category id="474" parentId="258">Мезококтейли Fillmed</category>
+    <category id="424" parentId="170">Ботулотоксины Meditoxin</category>
+    <category id="170">Ботулотоксины для лица</category>
+    <category id="275" parentId="167">Анестетики S CAIN Cream</category>
+    <category id="367" parentId="365">Косметика Renew Anti-Age (Ренью) - восстанавливающий крем под глаза и маски</category>
+    <category id="448" parentId="182">Липолитики LemoNBottlE</category>
+    <category id="194" parentId="186">Филлеры Youthfill</category>
+    <category id="463" parentId="176">Биоревитализанты Jalupro</category>
+    <category id="180">Гиалуронидаза для растворения филлера</category>
+    <category id="468" parentId="176">Биоревитализанты Aquashine</category>
+    <category id="168" parentId="167">Крем-анестетики NEO-Cain</category>
+    <category id="427" parentId="182">Липолитики Super V-Line</category>
+    <category id="171" parentId="170">Ботулотоксины BOTULAX</category>
+    <category id="182">Липолитики для лица и тела</category>
+    <category id="484" parentId="176">Биоревитализанты Profhilo</category>
+    <category id="496" parentId="182">Липолитики Koru Pharma (Кору Фарма): Lipo Lab для лица и телаЛиполитики Koru Pharma</category>
+    <category id="169" parentId="167">Крем-анестетики SM Lido</category>
+    <category id="435" parentId="258">Мезококтейли Rejuran</category>
+    <category id="189" parentId="186">Филлеры для лица Rejeunesse</category>
+    <category id="196" parentId="170">Ботулотоксины NABOTA</category>
+    <category id="274" parentId="258">Мезококтейли Dermaheal</category>
+    <category id="426" parentId="182">Липолитики Richesse</category>
+    <category id="505" parentId="176">Биоревитализант Karisma (Каризма)</category>
+    <category id="174" parentId="170">Ботулотоксин Rejurax (Реджуракс) - коррекция мимических морщин</category>
+    <category id="176">Биоревитализанты</category>
+    <category id="192" parentId="186">Филлеры Sardenya</category>
+    <category id="258">Мезотерапия</category>
+    <category id="380" parentId="365">Маски Renew (Ренью) - профессиональные маски для лица (поросуживающие, альгинатные)</category>
+    <category id="271" parentId="176">Биоревитализант Lapuroon Aurora Super (Супер Аврора)</category>
+    <category id="185" parentId="182">Липолитик Lipo Lab (Липо Лаб)</category>
+    <category id="188" parentId="186">Филлеры для лица NEURAMIS</category>
+    <category id="173" parentId="170">Ботулотоксин Onetox (Вантокс) - коррекция мимических морщин</category>
+    <category id="379" parentId="365">Кремы Renew (Ренью) - профессиональные кремы для лица и глаз</category>
+    <category id="259">Пилинги для лица</category>
+    <category id="269" parentId="182">Липолитик Lipo One (Липо Ван) - PPC Premium для лица и тела</category>
+    <category id="175" parentId="170">Ботулотоксин Rentox (Рентокс) - премиум аналог Ботокс</category>
+    <category id="191" parentId="186">Филлеры для лица REVOLAX</category>
+    <category id="178" parentId="176">Биоревитализанты Kiara Reju</category>
+    <category id="167">Анестезия для местного обезболивания</category>
+    <category id="184" parentId="182">Липолитик Face &amp;amp; Body (Фейс энд Боди)</category>
+    <category id="187" parentId="186">Филлеры Celosome</category>
+    <category id="172" parentId="170">Ботулотоксины Innotox</category>
+    <category id="179" parentId="176">Биоревитализанты Rejuran</category>
+    <category id="165">Другие товары</category>
+    <category id="183" parentId="182">Липолитик Dermaheal LL (Дермахил)</category>
+    <category id="190" parentId="186">Филлеры Replengen</category>
+    <category id="369" parentId="365">Уходовая косметика RENEW DERMAKEY</category>
+    <category id="177" parentId="176">Биоревитализанты Hyaron</category>
+    <category id="368" parentId="365">Уходовая косметика RENEW AQUALIA</category>
+    <category id="193" parentId="186">Филлеры для лица Stylage</category>
+    <category id="377" parentId="365">Уходовая косметика RENEW VITAMIN C</category>
+    <category id="375" parentId="365">Уходовая косметика RENEW RETINOL</category>
+    <category id="370" parentId="365">Косметика Renew Dermo Control (Ренью) - уход за жирной и проблемной кожей</category>
+  </categories>
+  <offers>
+  </offers>
+</shop>
+</yml_catalog>

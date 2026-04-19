@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+
+echo "[pre-commit] Running local checks..."
+"${ROOT_DIR}/scripts/checks/run-local-checks.sh"

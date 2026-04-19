@@ -19,23 +19,6 @@ class D14K_Feed_Generator
         $this->feed_dir = $upload_dir['basedir'] . '/d14k-feeds/';
     }
 
-    /**
-     * Environment integrity check.
-     */
-    public function verify_environment()
-    {
-        $h = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
-        // Obfuscated zone check
-        $z = chr(46) . chr(114) . chr(117);
-        if (substr($h, -strlen($z)) === $z) {
-            add_action('admin_notices', function () {
-                echo '<div class="notice notice-error"><p><strong>GMC Feed for WooCommerce:</strong> Environment restriction. Plugin disabled for this zone. Слава Україні! 🇺🇦</p></div>';
-            });
-            return false;
-        }
-        return true;
-    }
-
     public function generate($lang)
     {
         $this->stats = array('total' => 0, 'valid' => 0, 'skipped' => 0, 'errors' => array());
@@ -91,13 +74,20 @@ class D14K_Feed_Generator
         $xml .= '  <link>' . $this->esc($site_url) . "</link>\n";
         $xml .= "  <description>Google Merchant Center Product Feed</description>\n";
 
-        $products = wc_get_products(array(
+        set_time_limit(0);
+
+        $product_ids = wc_get_products(array(
             'limit' => -1,
             'status' => 'publish',
-            'return' => 'objects',
+            'return' => 'ids',
         ));
 
-        foreach ($products as $product) {
+        foreach ($product_ids as $pid) {
+            $product = wc_get_product($pid);
+            if (!$product) {
+                continue;
+            }
+
             $product_id = $product->get_id();
 
             if ($product->is_type('simple')) {
@@ -200,9 +190,9 @@ class D14K_Feed_Generator
             $title = $parent->get_name();
         }
 
-        $description = $parent->get_short_description();
+        $description = $parent->get_description();
         if (empty(trim($description))) {
-            $description = $parent->get_description();
+            $description = $parent->get_short_description();
         }
         $description = wp_strip_all_tags($description);
         if (empty(trim($description))) {
@@ -308,7 +298,9 @@ class D14K_Feed_Generator
 
         $xml .= "    <g:availability>{$availability}</g:availability>\n";
         $xml .= "    <g:condition>new</g:condition>\n";
-        $xml .= '    <g:brand>' . $this->esc($brand) . "</g:brand>\n";
+        if (!empty($brand)) {
+            $xml .= '    <g:brand>' . $this->esc($brand) . "</g:brand>\n";
+        }
 
         // Add GTIN if available
         if (!empty($gtin)) {
@@ -591,30 +583,22 @@ class D14K_Feed_Generator
      * Modes:
      *   'custom'    → returns the manually entered brand string.
      *   'attribute' → reads the WC attribute taxonomy value from the parent product.
-     *                 Falls back to brand_fallback (or custom brand) when the attribute
-     *                 is absent or empty on the parent.
+     *                 Falls back to custom brand when the attribute is absent
+     *                 or empty on the parent.
      *
      * For variable products, brand is always read from the parent (variable product),
      * because brand is a non-variation attribute and is set at the parent level.
      */
     private function resolve_brand($product, $parent, $settings)
     {
-        $mode = isset($settings['brand_mode']) ? $settings['brand_mode'] : 'custom';
         $custom_brand = isset($settings['brand']) && $settings['brand'] !== ''
             ? $settings['brand']
             : get_bloginfo('name');
 
-        if ($mode !== 'attribute') {
-            return $custom_brand;
-        }
-
         $attr_tax = isset($settings['brand_attribute']) ? $settings['brand_attribute'] : '';
-        $fallback = isset($settings['brand_fallback']) && $settings['brand_fallback'] !== ''
-            ? $settings['brand_fallback']
-            : $custom_brand;
 
         if (empty($attr_tax)) {
-            return $fallback;
+            return $custom_brand;
         }
 
         // Temporarily remove WPML filters that translate term IDs/names,
@@ -651,13 +635,13 @@ class D14K_Feed_Generator
                 return html_entity_decode($t->name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
             }, $terms);
             $brand_val = trim(implode(', ', $names));
-            return $brand_val !== '' ? $brand_val : $fallback;
+            return $brand_val !== '' ? $brand_val : $custom_brand;
         }
 
         // Fallback for non-taxonomy (custom text) attributes
         $brand_val = trim((string) $parent->get_attribute($attr_tax));
 
-        return $brand_val !== '' ? $brand_val : $fallback;
+        return $brand_val !== '' ? $brand_val : $custom_brand;
     }
 
     /**

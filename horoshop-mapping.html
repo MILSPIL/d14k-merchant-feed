@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Фід vs Horoshop</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; font-size: 13px; background: #f4f6f9; color: #222; }
+.header { background: #1a1a2e; color: #fff; padding: 20px 28px; }
+.header h1 { font-size: 18px; }
+.header p { color: #aaa; font-size: 12px; margin-top: 4px; }
+.content { padding: 20px 28px; }
+.xml-block { background: #1a1a2e; color: #cdd3de; font-family: monospace; font-size: 12px;
+  padding: 16px 20px; border-radius: 8px; line-height: 1.8; margin-bottom: 24px; }
+.xt{color:#7ec8e3} .xa{color:#ffb347} .xv{color:#98d982} .xc{color:#888;font-style:italic}
+.stats { display:flex; gap:12px; margin-bottom:20px; }
+.stat-box { flex:1; background:#fff; border-radius:8px; padding:12px 16px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+.stat-box .num { font-size:28px; font-weight:bold; }
+.stat-box .lbl { font-size:11px; color:#888; margin-top:2px; }
+.green .num{color:#27ae60} .orange .num{color:#e67e22} .red .num{color:#e74c3c}
+table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.08); margin-bottom:24px; }
+th { background:#1a1a2e; color:#fff; padding:9px 12px; text-align:left; font-size:12px; }
+td { padding:8px 12px; border-bottom:1px solid #eee; vertical-align:middle; font-size:12px; }
+tr:last-child td{border-bottom:none} tr:hover td{background:#f8f9ff}
+.group-header td { background:#eef2ff; font-weight:bold; color:#1a1a2e; font-size:11px; text-transform:uppercase; letter-spacing:.5px; padding:6px 12px; }
+.tag { font-family:monospace; background:#eef2ff; color:#2c3e8c; padding:2px 6px; border-radius:4px; font-size:11px; white-space:nowrap; }
+.val{color:#888;font-style:italic}
+.badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold; white-space:nowrap; }
+.b-ok{background:#d5f5e3;color:#1e8449} .b-warn{background:#fdebd0;color:#ca6f1e}
+.b-skip{background:#eaecee;color:#7f8c8d} .b-no{background:#fadbd8;color:#922b21}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🔄 Зіставлення XML-фіду з полями Horoshop</h1>
+  <p>filler.com.ua → канал horoshop | SKU: 19428371 | 30.03.2026</p>
+</div>
+<div class="content">
+
+<div class="xml-block">
+<span class="xc">&lt;!-- Реальний офер з фіду (SKU 19428371) --&gt;</span><br>
+&lt;<span class="xt">offer</span> <span class="xa">id</span>="<span class="xv">19428371</span>" <span class="xa">available</span>="<span class="xv">true</span>"&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">url</span>&gt;<span class="xv">https://filler.com.ua/ru/product/vitaran-i-ii-2ml-ru/</span>&lt;/<span class="xt">url</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">price</span>&gt;<span class="xv">3000</span>&lt;/<span class="xt">price</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">oldprice</span>&gt;<span class="xv">3500</span>&lt;/<span class="xt">oldprice</span>&gt;&nbsp;<span class="xc">&lt;!-- якщо є акція --&gt;</span><br>
+&nbsp;&nbsp;&lt;<span class="xt">currencyId</span>&gt;<span class="xv">UAH</span>&lt;/<span class="xt">currencyId</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">categoryId</span>&gt;<span class="xv">612</span>&lt;/<span class="xt">categoryId</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">picture</span>&gt;<span class="xv">https://.../фото1.jpg</span>&lt;/<span class="xt">picture</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">picture</span>&gt;<span class="xv">https://.../фото2.jpg</span>&lt;/<span class="xt">picture</span>&gt;&nbsp;<span class="xc">&lt;!-- галерея --&gt;</span><br>
+&nbsp;&nbsp;&lt;<span class="xt">vendor</span>&gt;<span class="xv">Vitaran</span>&lt;/<span class="xt">vendor</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">article</span>&gt;<span class="xv">19428371</span>&lt;/<span class="xt">article</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">name</span>&gt;<span class="xv">Мезококтейль Vitaran i II ... (RU)</span>&lt;/<span class="xt">name</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">name_uk</span>&gt;<span class="xv">Мезококтейль Vitaran i II ... (UA)</span>&lt;/<span class="xt">name_uk</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">description</span>&gt;<span class="xv">&lt;![CDATA[ повний HTML RU ]]&gt;</span>&lt;/<span class="xt">description</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">description_uk</span>&gt;<span class="xv">&lt;![CDATA[ повний HTML UA ]]&gt;</span>&lt;/<span class="xt">description_uk</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="xt">quantity_in_stock</span>&gt;<span class="xv">0</span>&lt;/<span class="xt">quantity_in_stock</span>&gt;<br>
+&lt;/<span class="xt">offer</span>&gt;
+</div>
+
+<div class="stats">
+  <div class="stat-box green"><div class="num">12</div><div class="lbl">Поля є ✅</div></div>
+  <div class="stat-box orange"><div class="num">3</div><div class="lbl">Потребують уваги ⚠️</div></div>
+  <div class="stat-box red"><div class="num">2</div><div class="lbl">Відсутніх ❌</div></div>
+  <div class="stat-box" style="border-left:3px solid #bbb"><div class="num">42</div><div class="lbl">Не потрібно ⬜</div></div>
+</div>
+
+<table>
+  <tr><th width="26%">Поле Horoshop</th><th width="28%">Наш XML-тег</th><th width="26%">Приклад</th><th width="20%">Статус</th></tr>
+
+  <tr class="group-header"><td colspan="4">🏷️ Ідентифікатори</td></tr>
+  <tr><td>Артикул</td><td><span class="tag">offer id</span> + <span class="tag">&lt;article&gt;</span></td><td class="val">19428371 (WC SKU)</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Родительский артикул</td><td><span class="tag">—</span></td><td class="val">Тільки для варіацій</td><td><span class="badge b-skip">⬜ Не потрібно</span></td></tr>
+
+  <tr class="group-header"><td colspan="4">🌐 Назви (двомовні)</td></tr>
+  <tr><td>Название (RU)</td><td><span class="tag">&lt;name&gt;</span></td><td class="val">Мезококтейль... (рос.)</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Название (UA)</td><td><span class="tag">&lt;name_uk&gt;</span></td><td class="val">Мезококтейль... (укр.)</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Название модификации (UA/RU)</td><td><span class="tag">—</span></td><td class="val">Тільки для варіацій</td><td><span class="badge b-skip">⬜ Не потрібно</span></td></tr>
+
+  <tr class="group-header"><td colspan="4">📝 Описи (двомовні)</td></tr>
+  <tr><td>Описание товара (RU)</td><td><span class="tag">&lt;description&gt;</span></td><td class="val">HTML CDATA (RU)</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Описание товара (UA)</td><td><span class="tag">&lt;description_uk&gt;</span></td><td class="val">HTML CDATA (UA)</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Короткое описание (RU)</td><td><span class="tag">—</span></td><td class="val">WC short_description</td><td><span class="badge b-warn">⚠️ Можна додати</span></td></tr>
+  <tr><td>Короткое описание (UA)</td><td><span class="tag">—</span></td><td class="val">WC short_description UA</td><td><span class="badge b-warn">⚠️ Можна додати</span></td></tr>
+
+  <tr class="group-header"><td colspan="4">💰 Ціни та валюта</td></tr>
+  <tr><td>Цена</td><td><span class="tag">&lt;price&gt;</span></td><td class="val">3000</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Старая цена</td><td><span class="tag">&lt;oldprice&gt;</span></td><td class="val">3500 (якщо акція)</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Валюта</td><td><span class="tag">&lt;currencyId&gt;</span></td><td class="val">UAH</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Скидка %</td><td><span class="tag">—</span></td><td class="val">Horoshop рахує сам</td><td><span class="badge b-skip">⬜ Авто</span></td></tr>
+
+  <tr class="group-header"><td colspan="4">📦 Склад та наявність</td></tr>
+  <tr><td>Наличие</td><td><span class="tag">available="true/false"</span></td><td class="val">true = В наявності</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Количество</td><td><span class="tag">&lt;quantity_in_stock&gt;</span></td><td class="val">0, 5, 10…</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+
+  <tr class="group-header"><td colspan="4">🖼️ Медіа</td></tr>
+  <tr><td>Фото (головне)</td><td><span class="tag">&lt;picture&gt;</span> (перший)</td><td class="val">URL .jpg</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Галерея</td><td><span class="tag">&lt;picture&gt;</span> (множинні)</td><td class="val">Усі додаткові</td><td><span class="badge b-warn">⚠️ Маппити 1 раз</span></td></tr>
+
+  <tr class="group-header"><td colspan="4">🏪 Категорія та бренд</td></tr>
+  <tr><td>Раздел (категорія)</td><td><span class="tag">&lt;categoryId&gt;</span></td><td class="val">612 (WC ID)</td><td><span class="badge b-warn">⚠️ ID — перевірити</span></td></tr>
+  <tr><td>Бренд</td><td><span class="tag">&lt;vendor&gt;</span></td><td class="val">Vitaran</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+  <tr><td>Ссылка</td><td><span class="tag">&lt;url&gt;</span></td><td class="val">https://filler.com.ua/…</td><td><span class="badge b-ok">✅ Є</span></td></tr>
+
+  <tr class="group-header"><td colspan="4">🔢 Штрихкоди / MPN</td></tr>
+  <tr><td>Штрихкод</td><td><span class="tag">—</span></td><td class="val">Немає в WC</td><td><span class="badge b-no">❌ Відсутній</span></td></tr>
+  <tr><td>Код виробника (MPN)</td><td><span class="tag">—</span></td><td class="val">Немає в WC</td><td><span class="badge b-no">❌ Відсутній</span></td></tr>
+
+  <tr class="group-header"><td colspan="4">📋 Службові / SEO (Horoshop заповнює сам)</td></tr>
+  <tr><td>HTML title / META / h1 (UA+RU)</td><td><span class="tag">—</span></td><td></td><td><span class="badge b-skip">⬜ Не потрібно</span></td></tr>
+  <tr><td>Алиас, дата, відображення</td><td><span class="tag">—</span></td><td></td><td><span class="badge b-skip">⬜ Авто / вручну</span></td></tr>
+  <tr><td>Код УКТ ВЭД, гарантія</td><td><span class="tag">—</span></td><td></td><td><span class="badge b-skip">⬜ Не критично</span></td></tr>
+  <tr><td>Описание для маркетплейсів, акції</td><td><span class="tag">—</span></td><td></td><td><span class="badge b-skip">⬜ Не потрібно</span></td></tr>
+</table>
+
+<div style="background:#fff;border-radius:8px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+  <div style="font-weight:bold;font-size:14px;margin-bottom:12px;color:#1a1a2e">📌 Що маппити вручну при першому імпорті</div>
+  <table style="box-shadow:none;margin:0 0 12px">
+    <tr><th style="background:#27ae60;width:40%">Наш XML-тег</th><th style="background:#27ae60">→ Поле Horoshop</th></tr>
+    <tr><td><span class="tag">offer id</span> або <span class="tag">&lt;article&gt;</span></td><td>Артикул</td></tr>
+    <tr><td><span class="tag">&lt;name&gt;</span></td><td>Название (RU)</td></tr>
+    <tr><td><span class="tag">&lt;name_uk&gt;</span></td><td>Название (UA)</td></tr>
+    <tr><td><span class="tag">&lt;description&gt;</span></td><td>Описание товара (RU)</td></tr>
+    <tr><td><span class="tag">&lt;description_uk&gt;</span></td><td>Описание товара (UA)</td></tr>
+    <tr><td><span class="tag">&lt;picture&gt;</span> (2-й і далі)</td><td>Галерея</td></tr>
+    <tr><td><span class="tag">&lt;categoryId&gt;</span></td><td>Раздел (якщо авто не спрацює)</td></tr>
+  </table>
+  <p style="color:#888;font-size:11px;line-height:1.6">
+    ✔ Після першого ручного маппингу Horoshop зберігає шаблон — наступні імпорти автоматичні.<br>
+    ✔ Штрихкод / MPN можна додати до фіду пізніше, якщо з'являться в WC як meta-поля.
+  </p>
+</div>
+
+</div>
+</body>
+</html>

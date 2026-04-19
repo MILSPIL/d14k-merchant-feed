@@ -422,9 +422,11 @@ class D14K_CSV_Generator
 
     private function resolve_brand($product, $parent, $settings)
     {
-        // Re-use logical from YML Generator
-        $mode = isset($settings['brand_mode']) ? $settings['brand_mode'] : 'custom';
-        if ($mode === 'attribute' && !empty($settings['brand_attribute'])) {
+        $custom_brand = isset($settings['brand']) && $settings['brand'] !== ''
+            ? $settings['brand']
+            : get_bloginfo('name');
+
+        if (!empty($settings['brand_attribute'])) {
             $attr = $settings['brand_attribute'];
             $val = $product->get_attribute($attr);
             if (empty($val) && $product->is_type('variation')) {
@@ -434,16 +436,22 @@ class D14K_CSV_Generator
                 return $val;
             }
         }
-        return isset($settings['brand_custom']) ? $settings['brand_custom'] : '';
+        return $custom_brand;
     }
 
-    // Import helper functions that existed natively in D14K_YML_Generator
-    private function is_in_excluded_categories($product_id, $excluded)
+    private function is_in_excluded_categories($product_id, $excluded_categories)
     {
         $terms = get_the_terms($product_id, 'product_cat');
-        if ($terms && !is_wp_error($terms)) {
-            foreach ($terms as $term) {
-                if (in_array($term->term_id, $excluded)) {
+        if (!$terms || is_wp_error($terms)) {
+            return false;
+        }
+        foreach ($terms as $term) {
+            if (in_array((int) $term->term_id, $excluded_categories, true)) {
+                return true;
+            }
+            $ancestors = get_ancestors((int) $term->term_id, 'product_cat');
+            foreach ($ancestors as $ancestor_id) {
+                if (in_array((int) $ancestor_id, $excluded_categories, true)) {
                     return true;
                 }
             }
@@ -451,32 +459,75 @@ class D14K_CSV_Generator
         return false;
     }
 
-    private function expand_excluded_with_translations($excluded_categories)
+    private function expand_excluded_with_translations($term_ids)
     {
-        $expanded = $excluded_categories;
-        if (function_exists('apply_filters')) {
-            foreach ($excluded_categories as $cat_id) {
-                $tr_id = apply_filters('wpml_object_id', $cat_id, 'product_cat', false, 'uk');
-                if ($tr_id) {
-                    $expanded[] = $tr_id;
-                }
-            }
+        if (empty($term_ids)) {
+            return $term_ids;
         }
-        return array_unique($expanded);
+        global $wpdb;
+        $table = $wpdb->prefix . 'icl_translations';
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
+            return $term_ids;
+        }
+        $placeholders = implode(',', array_fill(0, count($term_ids), '%d'));
+        $trids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT DISTINCT trid FROM {$table}
+                 WHERE element_type = 'tax_product_cat'
+                 AND element_id IN ($placeholders)",
+                $term_ids
+            )
+        );
+        if (empty($trids)) {
+            return $term_ids;
+        }
+        $trid_ph = implode(',', array_fill(0, count($trids), '%d'));
+        $all_ids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT element_id FROM {$table}
+                 WHERE element_type = 'tax_product_cat'
+                 AND trid IN ($trid_ph)
+                 AND element_id IS NOT NULL",
+                $trids
+            )
+        );
+        return array_unique(array_map('intval', array_merge($term_ids, $all_ids)));
     }
 
-    private function is_excluded_by_attributes($product, $filters)
+    private function is_excluded_by_attributes($product, $attribute_filters)
     {
-        $lines = array_map('trim', explode("\n", $filters));
-        foreach ($lines as $line) {
-            if (empty($line))
+        foreach ($attribute_filters as $taxonomy => $filter) {
+            if (empty($filter['enabled']) || empty($filter['values'])) {
                 continue;
-            $parts = array_map('trim', explode(':', $line, 2));
-            if (count($parts) === 2) {
-                $attr = $parts[0];
-                $val = strtolower($parts[1]);
-                $product_val = strtolower((string) $product->get_attribute($attr));
-                if ($product_val === $val || strpos($product_val, $val . ',') !== false || strpos($product_val, ', ' . $val) !== false) {
+            }
+            $mode = isset($filter['mode']) ? $filter['mode'] : 'exclude';
+            $filter_slugs = (array) $filter['values'];
+
+            if ($product->is_type('variation')) {
+                $variation_attrs = $product->get_variation_attributes();
+                $attr_key = 'attribute_' . $taxonomy;
+                if (!array_key_exists($attr_key, $variation_attrs)) {
+                    continue;
+                }
+                $term_slug = $variation_attrs[$attr_key];
+                if ($term_slug === '') {
+                    continue;
+                }
+                if ($mode === 'exclude' && in_array($term_slug, $filter_slugs, true)) {
+                    return true;
+                }
+                if ($mode === 'include' && !in_array($term_slug, $filter_slugs, true)) {
+                    return true;
+                }
+            } else {
+                $terms = wp_get_object_terms($product->get_id(), $taxonomy, array('fields' => 'slugs'));
+                if (is_wp_error($terms) || empty($terms)) {
+                    continue;
+                }
+                if ($mode === 'exclude' && !empty(array_intersect($terms, $filter_slugs))) {
+                    return true;
+                }
+                if ($mode === 'include' && empty(array_intersect($terms, $filter_slugs))) {
                     return true;
                 }
             }
@@ -491,7 +542,6 @@ class D14K_CSV_Generator
         $params = array();
         $attributes = $parent->get_attributes();
 
-        $brand_mode = isset($settings['brand_mode']) ? $settings['brand_mode'] : 'custom';
         $brand_attr = isset($settings['brand_attribute']) ? $settings['brand_attribute'] : '';
 
         foreach ($attributes as $attr_key => $attribute) {
@@ -501,7 +551,7 @@ class D14K_CSV_Generator
             if ($attribute instanceof WC_Product_Attribute) {
                 if ($attribute->is_taxonomy()) {
                     $taxonomy = $attribute->get_taxonomy();
-                    if ($brand_mode === 'attribute' && $taxonomy === $brand_attr) {
+                    if ($brand_attr !== '' && $taxonomy === $brand_attr) {
                         continue;
                     }
                     $tax_obj = get_taxonomy($taxonomy);
@@ -520,7 +570,7 @@ class D14K_CSV_Generator
                     }
                 } else {
                     $name = $attribute->get_name();
-                    if ($brand_mode === 'attribute' && $name === $brand_attr) {
+                    if ($brand_attr !== '' && $name === $brand_attr) {
                         continue;
                     }
 

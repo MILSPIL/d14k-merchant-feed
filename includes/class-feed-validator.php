@@ -319,11 +319,10 @@ class D14K_Feed_Validator
         // Check condition (always 'new')
         $data['present_fields'][] = 'condition';
 
-        // Check brand — in attribute mode brand is resolved dynamically (always present via fallback)
-        $brand_mode = isset($settings['brand_mode']) ? $settings['brand_mode'] : 'custom';
+        // Check brand — if an attribute is configured, generator falls back to custom brand
         $brand = isset($settings['brand']) ? $settings['brand'] : '';
-        $brand_fallback = isset($settings['brand_fallback']) ? $settings['brand_fallback'] : '';
-        $brand_has_value = !empty($brand) || $brand_mode === 'attribute' || !empty($brand_fallback);
+        $brand_attribute = isset($settings['brand_attribute']) ? $settings['brand_attribute'] : '';
+        $brand_has_value = !empty($brand) || !empty($brand_attribute);
         if ($brand_has_value) {
             $data['present_fields'][] = 'brand';
         } else {

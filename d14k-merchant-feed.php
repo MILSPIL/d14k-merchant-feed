@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MIL SPIL Feed Generator
  * Description: Генерація фідів для Google Merchant Center та українських маркетплейсів (Horoshop, Prom.ua, Rozetka). Підтримка WooCommerce, WPML, Custom Labels, YML/XML експорт. | Feed generator for GMC & UA marketplaces.
- * Version: 3.0.0
+ * Version: 4.0.2
  * Author: MIL SPIL
  * Author URI: https://milspil.net
  * Requires at least: 5.8
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('D14K_FEED_VERSION', '3.0.0');
+define('D14K_FEED_VERSION', '4.0.2');
 define('D14K_FEED_BASENAME', plugin_basename(__FILE__));
 define('D14K_FEED_PATH', plugin_dir_path(__FILE__));
 define('D14K_FEED_URL', plugin_dir_url(__FILE__));
@@ -57,7 +57,7 @@ function d14k_feed_activate()
 {
     update_option('d14k_feed_flush_rewrite', 'yes');
     if (!wp_next_scheduled('d14k_feed_cron_hook')) {
-        wp_schedule_event(time(), 'd14k_every_6_hours', 'd14k_feed_cron_hook');
+        wp_schedule_event(time(), 'daily', 'd14k_feed_cron_hook');
     }
 }
 register_activation_hook(__FILE__, 'd14k_feed_activate');
@@ -74,6 +74,8 @@ add_action('init', 'd14k_feed_maybe_flush', 20);
 function d14k_feed_deactivate()
 {
     wp_clear_scheduled_hook('d14k_feed_cron_hook');
+    wp_clear_scheduled_hook('d14k_supplier_feeds_cron');
+    wp_clear_scheduled_hook('d14k_supplier_feed_due');
     flush_rewrite_rules();
 }
 register_deactivation_hook(__FILE__, 'd14k_feed_deactivate');
@@ -91,27 +93,82 @@ function d14k_feed_init()
     require_once D14K_FEED_PATH . 'includes/class-feed-validator.php';
     require_once D14K_FEED_PATH . 'includes/class-feed-generator.php';
     require_once D14K_FEED_PATH . 'includes/class-yml-generator.php';
+    require_once D14K_FEED_PATH . 'includes/class-csv-generator.php';
     require_once D14K_FEED_PATH . 'includes/class-cron-manager.php';
     require_once D14K_FEED_PATH . 'includes/class-admin-settings.php';
     require_once D14K_FEED_PATH . 'includes/class-product-meta.php';
+    // Prom.ua integration
+    require_once D14K_FEED_PATH . 'includes/class-prom-api.php';
+    require_once D14K_FEED_PATH . 'includes/class-prom-importer.php';
+    require_once D14K_FEED_PATH . 'includes/class-prom-exporter.php';
+    require_once D14K_FEED_PATH . 'includes/class-supplier-feeds.php';
 
     $wpml = new D14K_WPML_Handler();
     $validator = new D14K_Feed_Validator();
     $generator = new D14K_Feed_Generator($wpml, $validator);
     $yml_generator = new D14K_YML_Generator($wpml, $validator);
+    $csv_generator = new D14K_CSV_Generator($wpml, $validator);
+
+    // Prom.ua integration instances
+    $prom_api       = new D14K_Prom_API();
+    $prom_importer  = new D14K_Prom_Importer($prom_api);
+    $prom_exporter  = new D14K_Prom_Exporter($prom_api, $yml_generator);
+    $supplier_feeds = new D14K_Supplier_Feeds();
 
     // Environment restriction hiding
-    if (method_exists($generator, 'verify_environment') && !$generator->verify_environment()) {
+    /*if (method_exists($generator, 'verify_environment') && !$generator->verify_environment()) {
         return;
+    }*/
+
+    // Auto-flush rewrite rules on version update
+    if (get_option('d14k_feed_db_version', '0') !== D14K_FEED_VERSION) {
+        update_option('d14k_feed_flush_rewrite', 'yes');
+        update_option('d14k_feed_db_version', D14K_FEED_VERSION);
     }
 
-    $cron = new D14K_Cron_Manager($generator, $yml_generator, $wpml);
-    new D14K_Admin_Settings($generator, $yml_generator, $wpml, $cron);
+    $cron = new D14K_Cron_Manager($generator, $yml_generator, $csv_generator, $wpml, $prom_importer, $prom_exporter, $supplier_feeds);
+    new D14K_Admin_Settings($generator, $yml_generator, $csv_generator, $wpml, $cron, $prom_api, $prom_importer, $prom_exporter, $supplier_feeds);
 
-    add_action('template_redirect', function () use ($generator, $yml_generator) {
+    // Використовуємо пріоритет 1, щоб перехопити запит ДО канонічного редиректу WordPress
+    add_action('template_redirect', function () use ($generator, $yml_generator, $csv_generator) {
         d14k_feed_handle_request($generator);
-        d14k_yml_feed_handle_request($yml_generator);
-    });
+        d14k_yml_feed_handle_request($yml_generator, $csv_generator);
+    }, 1);
+
+    if (defined('WP_CLI') && WP_CLI) {
+        WP_CLI::add_command('d14k-feed generate-gmc', function ($args, $assoc_args) use ($generator, $wpml) {
+            $lang = isset($args[0]) ? $args[0] : $wpml->get_default_language();
+            WP_CLI::log("Generating GMC feed for language: $lang");
+            if ($generator->generate($lang)) {
+                WP_CLI::success("GMC feed generated.");
+            } else {
+                WP_CLI::error("Failed to generate GMC feed.");
+            }
+        });
+
+        WP_CLI::add_command('d14k-feed generate-yml', function ($args, $assoc_args) use ($yml_generator) {
+            $channel = isset($args[0]) ? $args[0] : '';
+            if (empty($channel)) {
+                WP_CLI::error("Please specify a channel (e.g. prom, rozetka).");
+            }
+            WP_CLI::log("Generating YML feed for channel: $channel");
+            if ($yml_generator->generate($channel)) {
+                WP_CLI::success("YML feed generated.");
+            } else {
+                WP_CLI::error("Failed to generate YML feed.");
+            }
+        });
+
+        WP_CLI::add_command('d14k-feed generate-csv', function ($args, $assoc_args) use ($csv_generator) {
+            $channel = isset($args[0]) ? $args[0] : 'horoshop';
+            WP_CLI::log("Generating CSV feed for channel: $channel");
+            if ($csv_generator->generate($channel)) {
+                WP_CLI::success("CSV feed generated.");
+            } else {
+                WP_CLI::error("Failed to generate CSV feed.");
+            }
+        });
+    }
 }
 add_action('plugins_loaded', 'd14k_feed_init', 20);
 
@@ -152,8 +209,9 @@ function d14k_feed_handle_request($generator)
  * URL pattern: /marketplace-feed/{channel}/
  * Each channel produces a single bilingual feed.
  */
-function d14k_yml_feed_handle_request($yml_generator)
+function d14k_yml_feed_handle_request($yml_generator, $csv_generator = null)
 {
+
     $is_feed = get_query_var('d14k_yml_feed');
     if (empty($is_feed)) {
         return;
@@ -164,6 +222,37 @@ function d14k_yml_feed_handle_request($yml_generator)
     if (empty($channel)) {
         status_header(404);
         exit('Channel not specified.');
+    }
+
+    // Handle horoshop CSV
+    if ($channel === 'horoshop') {
+        if (!$csv_generator) {
+            status_header(500);
+            exit('CSV generator not initialized.');
+        }
+
+        // Check if channel is enabled
+        $settings = get_option('d14k_feed_settings', array());
+        $channels = isset($settings['yml_channels']) ? $settings['yml_channels'] : array();
+        if (empty($channels[$channel])) {
+            status_header(403);
+            exit('This feed channel is disabled.');
+        }
+
+        $feed_path = $csv_generator->get_feed_path($channel);
+        if (!file_exists($feed_path)) {
+            $result = $csv_generator->generate($channel);
+            if (!$result) {
+                status_header(500);
+                exit('CSV feed generation failed.');
+            }
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Cache-Control: public, max-age=3600');
+        header('Content-Disposition: attachment; filename="feed-' . $channel . '.csv"');
+        readfile($feed_path);
+        exit;
     }
 
     if (!in_array($channel, D14K_YML_Generator::CHANNELS, true)) {
